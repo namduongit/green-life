@@ -1,4 +1,4 @@
-# SPOCE Hospital Management System
+# GreenLife - Eco Friendly Product (Web)
 **Sales website (eco-friendly products - GreenLife) integrated with an online payment system**  
 _Backend: NestJS | Frontend: React + Vite + TypeScript_
 

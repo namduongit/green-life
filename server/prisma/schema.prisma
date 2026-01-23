@@ -6,7 +6,9 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "./generated/"
+
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -44,22 +46,42 @@ enum PaymentType {
   SeaPay
 }
 
-model Accounts {
-  id       String   @id @default(auto()) @map("_id") @db.ObjectId
-  email    String   @unique
-  password String
-  role Role @default(User)
+enum CommonStatus {
+  Active
+  UnActive
+  Other
+}
 
-  orders   Orders[]
+model Accounts {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  email    String @unique
+  password String
+  role     Role   @default(User)
+
+  cart Carts?
+
+  orders    Orders[]
+  addresses Addresses[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   isLock    Boolean  @default(false)
 }
 
+model Addresses {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  accountId String   @unique @db.ObjectId
+  account   Accounts @relation(fields: [accountId], references: [id])
+  province  String
+  city      String
+  home      String
+}
+
 model Categories {
-  id       String     @id @default(auto()) @map("_id") @db.ObjectId
-  name     String
+  id     String       @id @default(auto()) @map("_id") @db.ObjectId
+  name   String
+  status CommonStatus @default(Other)
+
   products Products[]
 
   createdAt DateTime @default(now())
@@ -68,8 +90,10 @@ model Categories {
 }
 
 model Tags {
-  id       String        @id @default(auto()) @map("_id") @db.ObjectId
-  name     String
+  id     String       @id @default(auto()) @map("_id") @db.ObjectId
+  name   String
+  status CommonStatus @default(Other)
+
   tagItems TagProducts[]
 
   createdAt DateTime @default(now())
@@ -78,83 +102,111 @@ model Tags {
 }
 
 model Properties {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId   String   @unique @db.ObjectId
+  Product     Products @relation(fields: [productId], references: [id])
   urlImage    String
   name        String
   description String
   weight      String
-  unit        Unit      @default(Other)
+  unit        Unit     @default(Other)
   length      Int
   width       Int
   height      Int
-  product     Products?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Products {
-  id           String     @id @default(auto()) @map("_id") @db.ObjectId
-  currentStock Int        @default(0)
-  propertyId   String     @unique @db.ObjectId
-  property     Properties @relation(fields: [propertyId], references: [id])
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  currentStock Int          @default(0)
+  status       CommonStatus @default(Other)
 
   categoryId String     @db.ObjectId
   category   Categories @relation(fields: [categoryId], references: [id])
 
-  tagItems   TagProducts[]
+  tagItems TagProducts[]
+
   orderItems OrderItems[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isShow    Boolean  @default(true)
-  isDelete  Boolean  @default(false)
+  cartItems CartItems[]
+
+  property Properties?
 }
 
 model Orders {
-  id              String  @id @default(auto()) @map("_id") @db.ObjectId
-  accountId       String  @db.ObjectId
-  totalAmount     Int
-  shippingAddress String?
-  notes           String?
-
-  account    Accounts     @relation(fields: [accountId], references: [id])
-  orderItems OrderItems[]
-
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  totalAmount   Int
+  name          String
+  phone         String
+  email         String?
+  address       String
+  note          String
   status        OrderStatus        @default(Pending)
   paymentStatus OrderPaymentStatus @default(UnPaid)
 
-  paymentId String? @unique @db.ObjectId
-  payment Payment? @relation(fields: [paymentId], references: [id])
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  accountId String   @db.ObjectId
+  account   Accounts @relation(fields: [accountId], references: [id])
+
+  orderItems OrderItems[]
+  payment    Payments?
 }
 
 model OrderItems {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderId   String   @db.ObjectId
-  order     Orders   @relation(fields: [orderId], references: [id])
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  quantity Int
+  price    Int
+
+  orderId String @db.ObjectId
+  order   Orders @relation(fields: [orderId], references: [id])
+
   productId String   @db.ObjectId
   product   Products @relation(fields: [productId], references: [id])
-  quantity  Int
-  price     Int
-  createdAt DateTime @default(now())
 }
 
 model TagProducts {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  tagId     String   @db.ObjectId
-  tag       Tags     @relation(fields: [tagId], references: [id])
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  tagId String @db.ObjectId
+  tag   Tags   @relation(fields: [tagId], references: [id])
+
   productId String   @db.ObjectId
   product   Products @relation(fields: [productId], references: [id])
 }
 
-model Payment {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  type PaymentType
-  order Orders?
+model Payments {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  type          PaymentType
   transactionId String
-  totalAmount Int
-  content String
-  status String
+  totalAmount   Int
+  content       String
+  status        String
+  createAt      DateTime    @default(now())
+
+  orderId String @unique @db.ObjectId
+  order   Orders @relation(fields: [orderId], references: [id])
+}
+
+model Carts {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  accountId String   @unique @db.ObjectId
+  account   Accounts @relation(fields: [accountId], references: [id])
+
+  cartItems CartItems[]
+}
+
+model CartItems {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  quantity Int
+
+  productId String   @db.ObjectId
+  product   Products @relation(fields: [productId], references: [id])
+
+  cartId String @db.ObjectId
+  cart   Carts  @relation(fields: [cartId], references: [id])
 }

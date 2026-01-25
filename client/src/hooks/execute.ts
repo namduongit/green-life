@@ -2,6 +2,10 @@ import { useState } from "react"
 
 type QueryResp<T> = [null, T] | [Error, null];
 
+
+/**
+ * hello for (luky)
+ */
 export const useExecute = <T> () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<Error>();

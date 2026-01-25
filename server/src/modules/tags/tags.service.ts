@@ -7,7 +7,6 @@ import { CommonStatus } from "prisma/generated/client";
 export class TagsService {
     constructor(private prismaService: PrismaService) { }
 
-    // GET: Lấy tất cả tags (không bao gồm tags bị xóa mềm)
     async getTags() {
         const result = await this.prismaService.prismaClient.tags.findMany({
             where: {
@@ -20,10 +19,9 @@ export class TagsService {
         return result;
     }
 
-    // GET: Lấy tags theo phân trang
     async getTagsPagination(page: number, limit: number) {
         if (page < 1 || limit < 1) {
-            throw new BadRequestException('Page and limit must be greater than 0');
+            throw new BadRequestException("Số trang và số lượng phải lớn hơn 0");
         }
 
         const skip = (page - 1) * limit;
@@ -57,24 +55,22 @@ export class TagsService {
         };
     }
 
-    // GET: Lấy tag theo ID
     async getTagById(id: string) {
         const tag = await this.prismaService.prismaClient.tags.findUnique({
             where: { id }
         });
 
         if (!tag) {
-            throw new NotFoundException(`Tag with ID ${id} not found`);
+            throw new NotFoundException("Không tìm thấy thẻ");
         }
 
         if (tag.isDelete) {
-            throw new NotFoundException(`Tag with ID ${id} has been deleted`);
+            throw new NotFoundException("Không thể lấy thẻ bị xóa");
         }
 
         return tag;
     }
 
-    // GET: Tìm kiếm tags theo điều kiện
     async searchTags(conditions: { name?: string; status?: "Active" | "UnActive" | "Other" }) {
         const where: any = {
             isDelete: false
@@ -101,7 +97,6 @@ export class TagsService {
         return result;
     }
 
-    // POST: Tạo tag mới
     async createTag(body: CreateTagDto) {
         const existingTag = await this.prismaService.prismaClient.tags.findFirst({
             where: {
@@ -111,7 +106,7 @@ export class TagsService {
         });
 
         if (existingTag) {
-            throw new BadRequestException('Tag with this name already exists');
+            throw new BadRequestException("Tên của thẻ này đã tồn tại");
         }
 
         const newTag = await this.prismaService.prismaClient.tags.create({
@@ -124,21 +119,19 @@ export class TagsService {
         return newTag;
     }
 
-    // PUT: Cập nhật tag
     async updateTag(id: string, body: { name?: string; status?: "Active" | "UnActive" | "Other" }) {
         const tag = await this.prismaService.prismaClient.tags.findUnique({
             where: { id }
         });
 
         if (!tag) {
-            throw new NotFoundException(`Tag with ID ${id} not found`);
+            throw new NotFoundException("Không tìm thấy thẻ");
         }
 
         if (tag.isDelete) {
-            throw new BadRequestException(`Cannot update deleted tag`);
+            throw new BadRequestException("Không thể cập nhật thẻ bị xóa");
         }
 
-        // Kiểm tra nếu cập nhật name, không được trùng với tag khác
         if (body.name && body.name !== tag.name) {
             const existingTag = await this.prismaService.prismaClient.tags.findFirst({
                 where: {
@@ -149,7 +142,7 @@ export class TagsService {
             });
 
             if (existingTag) {
-                throw new BadRequestException('Tag with this name already exists');
+                throw new BadRequestException("Tên thẻ đã được sử dụng");
             }
         }
 
@@ -164,18 +157,17 @@ export class TagsService {
         return updatedTag;
     }
 
-    // DELETE: Xóa mềm tag (thay đổi isDelete thành true)
     async softDeleteTag(id: string) {
         const tag = await this.prismaService.prismaClient.tags.findUnique({
             where: { id }
         });
 
         if (!tag) {
-            throw new NotFoundException(`Tag with ID ${id} not found`);
+            throw new NotFoundException("Không tìm thấy thẻ");
         }
 
         if (tag.isDelete) {
-            throw new BadRequestException('Tag is already deleted');
+            throw new BadRequestException("Thẻ này đã được xóa");
         }
 
         const deletedTag = await this.prismaService.prismaClient.tags.update({

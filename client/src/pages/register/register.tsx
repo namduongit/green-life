@@ -1,7 +1,26 @@
 import { useState } from "react";
+import { useExecute } from "../../hooks/execute";
+import { register, type RegisterRep } from "../../services/auth";
+import { useModalConfirmContext } from "../../contexts/modal-confirm/modal-confirm";
+import ButtonForm from "../../components/button/button-form/button-form";
+
 
 const RegisterPage = () => {
+    const { waitConfirm } = useModalConfirmContext();
+
+    const { loading, query } = useExecute<RegisterRep>();
+
     const [isShowPassword, setIsShowPassword] = useState<boolean>(false);
+    const [registerForm, setRegisterForm] = useState({
+        email: "",
+        password: "",
+        passwordConfirm: ""
+    });
+
+    const submitForm = async () => {
+        if (!await waitConfirm()) return;
+        await query(register(registerForm))
+    }
 
     return (
         <div className="pb-15">
@@ -22,7 +41,8 @@ const RegisterPage = () => {
                             <div className="px-3 ring-2 ring-gray-400 rounded-lg focus-within:ring-3 focus-within:ring-green-700
                                             flex items-center">
                                 <i className="fa-solid fa-user text-gray-600"></i>
-                                <input type="text" className="none-input ps-2 py-2 w-full" />
+                                <input type="text" className="none-input ps-2 py-2 w-full" 
+                                value={registerForm.email} onChange={(event) => setRegisterForm({ ...registerForm, email: event.target.value })} />
                             </div>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -30,7 +50,8 @@ const RegisterPage = () => {
                             <div className="px-3 ring-2 ring-gray-400 rounded-lg focus-within:ring-3 focus-within:ring-green-700
                                             flex items-center">
                                 <i className="fa-solid fa-key text-gray-600"></i>
-                                <input type={`${isShowPassword ? "text": "password"}`} className="none-input ps-2 py-2 w-full" />
+                                <input type={`${isShowPassword ? "text": "password"}`} className="none-input ps-2 py-2 w-full" 
+                                value={registerForm.password} onChange={(event) => setRegisterForm({ ...registerForm, password: event.target.value })} />
                                 <i className={`fa-solid ${isShowPassword ? "fa-eye" : "fa-eye-slash"} text-gray-600 cursor-pointer`}
                                     onClick={() => setIsShowPassword(!isShowPassword)}
                                 ></i>
@@ -41,14 +62,21 @@ const RegisterPage = () => {
                             <div className="px-3 ring-2 ring-gray-400 rounded-lg focus-within:ring-3 focus-within:ring-green-700
                                             flex items-center">
                                 <i className="fa-solid fa-key text-gray-600"></i>
-                                <input type={`${isShowPassword ? "text": "password"}`} className="none-input ps-2 py-2 w-full" />
+                                <input type={`${isShowPassword ? "text": "password"}`} className="none-input ps-2 py-2 w-full" 
+                                value={registerForm.passwordConfirm} onChange={(event) => setRegisterForm({ ...registerForm, passwordConfirm: event.target.value })} />
                                 <i className={`fa-solid ${isShowPassword ? "fa-eye" : "fa-eye-slash"} text-gray-600 cursor-pointer`}
                                     onClick={() => setIsShowPassword(!isShowPassword)}
                                 ></i>
                             </div>
                         </div>
                         <div>
-                            <button className="text-white bg-green-700 py-2 w-full rounded-lg hover:bg-green-800">ĐĂNG KÝ</button>
+                            <ButtonForm 
+                                className="text-white bg-green-700 py-2 w-full rounded-lg hover:bg-green-800"
+                                inLoading={{ isLoading: loading, textLoading: "Đang đăng ký "}}
+                                onClick={submitForm}
+                            >
+                                ĐĂNG KÝ 
+                            </ButtonForm> 
                         </div>
                     </div>
                 </div>

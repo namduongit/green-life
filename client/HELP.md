@@ -19,3 +19,6 @@
 **Modal**: 11
 **Toast**: 12
 **Other**: 11
+
+## Layer toast, sidebar,...
+bg-gray-800/60

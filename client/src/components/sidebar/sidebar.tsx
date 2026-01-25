@@ -15,7 +15,7 @@ const SideBar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: boolean, 
     return (
         <div className="absolute top-0 left-0 w-full h-screen bg-gray-800/60">
             {!isAuth && (
-                <div className="w-full sm:w-80 h-screen bg-white me-auto">
+                <div className="slide-to-left fixed top-0 start-0 w-full sm:w-80 h-screen bg-white me-auto">
                     <div className="h-18 shadow-md flex items-center">
                         <input type="text" placeholder="Tìm kiếm sản phẩm" className="w-full px-5 none-input"
                             value={searchInput} onChange={(event) => setSearchInput(event.target.value)}
@@ -33,7 +33,7 @@ const SideBar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: boolean, 
                             </div>
                         </div>
                     </div>
-                    <div>
+                    <div className="flex flex-col justify-between h-full">
                         <nav>
                             <ul className="font-normal text-md">
                                 <li className="py-4 ps-5 border-b border-gray-300">
@@ -71,6 +71,12 @@ const SideBar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: boolean, 
                                 >
                                     <i className="fa-regular fa-user"></i>
                                     <span>LOGIN/REGISTER</span>
+                                </li>
+
+                                <li className="py-4 ps-5 border-b border-gray-300 flex items-center gap-1"
+                                    onClick={closeSidebar}
+                                >
+                                    <span>ĐÓNG</span>
                                 </li>
                             </ul>
                         </nav>

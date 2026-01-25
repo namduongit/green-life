@@ -1,7 +1,21 @@
 import { useState } from "react";
+import { login } from "../../services/auth";
+import ButtonForm from "../../components/button/button-form/button-form";
+import { useExecute } from "../../hooks/execute";
 
 const LoginPage = () => {
+    const { loading, query } = useExecute();
+
     const [isShowPassword, setIsShowPassword] = useState<boolean>(false);
+    const [loginForm, setLoginForm] = useState({
+        email: "",
+        password: ""
+    });
+
+    const submitForm = async () => {
+        const response = await query(login(loginForm));
+        console.log(response);
+    }
 
     return (
         <div className="pb-15">
@@ -22,7 +36,9 @@ const LoginPage = () => {
                             <div className="px-3 ring-2 ring-gray-400 rounded-lg focus-within:ring-3 focus-within:ring-green-700
                                             flex items-center">
                                 <i className="fa-solid fa-user text-gray-600"></i>
-                                <input type="text" className="none-input ps-2 py-2 w-full" />
+                                <input type="text" className="none-input ps-2 py-2 w-full"
+                                    value={loginForm.email} onChange={(event) => setLoginForm({ ...loginForm, email: event.target.value })}
+                                />
                             </div>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -30,7 +46,9 @@ const LoginPage = () => {
                             <div className="px-3 ring-2 ring-gray-400 rounded-lg focus-within:ring-3 focus-within:ring-green-700
                                             flex items-center">
                                 <i className="fa-solid fa-key text-gray-600"></i>
-                                <input type={`${isShowPassword ? "text" : "password"}`} className="none-input ps-2 py-2 w-full" />
+                                <input type={`${isShowPassword ? "text" : "password"}`} className="none-input ps-2 py-2 w-full"
+                                    value={loginForm.password} onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })}
+                                />
                                 <i className={`fa-solid ${isShowPassword ? "fa-eye" : "fa-eye-slash"} text-gray-600 cursor-pointer`}
                                     onClick={() => setIsShowPassword(!isShowPassword)}
                                 ></i>
@@ -42,7 +60,13 @@ const LoginPage = () => {
                             }}>Quên mật khẩu</button>
                         </div>
                         <div>
-                            <button className="text-white bg-green-700 py-2 w-full rounded-lg hover:bg-green-800">ĐĂNG NHẬP</button>
+                            <ButtonForm
+                                className="text-white bg-green-700 py-2 w-full rounded-lg hover:bg-green-800"
+                                onClick={submitForm}
+                                inLoading={{ isLoading: loading, textLoading: "Đang đăng nhập" }}
+                            >
+                                ĐĂNG NHẬP
+                            </ButtonForm>
                         </div>
                     </div>
                 </div>

@@ -18,8 +18,8 @@ cd green-life
 
 Copy the example environment files and modify them as needed:
 ```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 ```
 
 ---

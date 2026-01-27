@@ -39,3 +39,8 @@ mongo:latest \
 --auth \
 --keyFile /mongo-keyfile
 ```
+
+---
+## Sanbox
+- ReturnURL: direct website
+- IPNURL: call back to server

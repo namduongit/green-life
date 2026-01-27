@@ -1,11 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { PrismaService } from './configs/prisma-client.config';
-import { TagsModule } from './modules/tags/tags.module';
-import { CategoriesModule } from './modules/categories/categories.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
-import { CategoriesController } from './modules/categories/categories.controller';
 import { AuthModule } from './modules/auth/auth.module';
-import { JwtService } from '@nestjs/jwt';
+import { CategoriesController } from './modules/categories/categories.controller';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { TagsModule } from './modules/tags/tags.module';
 import { ProductsModule } from './products/products.module';
 
 /**
@@ -22,7 +21,9 @@ import { ProductsModule } from './products/products.module';
 @Module({
   imports: [
     AuthModule,
-    TagsModule, CategoriesModule, ProductsModule
+    TagsModule, CategoriesModule, ProductsModule,
+    /** Payment */
+    PaymentsModule
   ],
   // Utility providers
   providers: [

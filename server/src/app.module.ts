@@ -6,6 +6,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 import { CategoriesController } from './modules/categories/categories.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtService } from '@nestjs/jwt';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 /**
  * Explain:
@@ -21,7 +22,9 @@ import { JwtService } from '@nestjs/jwt';
 @Module({
   imports: [
     AuthModule,
-    TagsModule, CategoriesModule
+    TagsModule, CategoriesModule,
+    /** Payment */
+    PaymentsModule
   ],
   // Utility providers
   providers: [

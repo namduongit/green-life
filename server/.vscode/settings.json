@@ -1,3 +1,9 @@
 {
-    "prisma.pinToPrisma6": true
+    // recommend extensions for this workspace
+    "extensions.recommendations": [
+        // prisma
+        "Prisma.prisma",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+    ]
 }

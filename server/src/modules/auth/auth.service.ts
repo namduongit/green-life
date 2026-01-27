@@ -1,12 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { Prisma, PrismaClient } from "prisma/generated/client";
-import { RegisterDto } from "./dto/register.dto";
-import { BcryptUtils } from "src/utils/bcrypt.utils";
 import { PrismaService } from "src/configs/prisma-client.config";
-import { LoginDto } from "./dto/login.dto";
 import { JsonWtConstants } from "src/constants/jsonwt.constants";
+import { BcryptUtils } from "src/utils/bcrypt.utils";
 import { LoginRep, RegisterRep } from "./dto/auth-response.dto";
+import { LoginDto } from "./dto/login.dto";
+import { RegisterDto } from "./dto/register.dto";
 
 @Injectable()
 export class AuthService {
@@ -24,6 +23,7 @@ export class AuthService {
         });
 
         if (existingAccount) throw new BadRequestException("Tài khoản đã tồn tại");
+        console.log(registerDto)
         if (registerDto.password !== registerDto.passwordConfirm) throw new BadRequestException("Mật khẩu xác nhận không khớp");
 
         const hashedPassword = await this.bcryptUtil.hashPassword(registerDto.password);

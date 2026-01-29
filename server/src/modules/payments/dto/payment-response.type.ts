@@ -1,7 +1,5 @@
-type PaymentType = "Cod" | "Momo" | "VNPay" | "Seapay";
+type PaymentType = 'Cod' | 'Momo' | 'VNPay' | 'Seapay';
 
-type PaymentRep = {
-    
-}
+type PaymentRep = {};
 
-export type { PaymentType, PaymentRep }
+export type { PaymentType, PaymentRep };

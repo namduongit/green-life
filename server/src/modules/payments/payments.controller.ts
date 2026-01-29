@@ -1,28 +1,28 @@
-import { Controller, Get, Ip, Post, Req } from "@nestjs/common";
-import { PaymentsService } from "./payments.service";
+import { Controller, Get, Ip, Post, Req } from '@nestjs/common';
+import { PaymentsService } from './payments.service';
 
-@Controller("api/payment")
+@Controller('api/payment')
 export class PaymentsController {
-    constructor(private readonly paymentsService: PaymentsService) { }
+    constructor(private readonly paymentsService: PaymentsService) {}
 
-    @Get("return-url")
+    @Get('return-url')
     async callIpn() {
-        console.log("Server call to server")
+        console.log('Server call to server');
     }
 
-    @Post("vnpay")
+    @Post('vnpay')
     async callVnpay(@Ip() idAddress) {
         this.paymentsService.callVnpay(idAddress, {
-            id: "namduongit",
-            totalAmount: 2000000
-        })
+            id: 'namduongit',
+            totalAmount: 2000000,
+        });
     }
 
-    @Post("momo")
+    @Post('momo')
     async callMomo() {
         this.paymentsService.callMomo({
-             id: "namduongit",
-            totalAmount: 2000000
-        })
+            id: 'namduongit',
+            totalAmount: 2000000,
+        });
     }
 }

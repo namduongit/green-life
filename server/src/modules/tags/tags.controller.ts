@@ -1,26 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from "@nestjs/common";
-import { TagsService } from "./tags.service";
-import { isCreate, isDelete, isGet, isPut, RestResponse } from "src/utils/response.utils";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { TagsService } from './tags.service';
+import { isCreate, isDelete, isGet, isPut } from 'src/utils/response.utils';
 
-@Controller("/api/tags")
+@Controller('/api/tags')
 export class TagsController {
     constructor(private tagsService: TagsService) {}
 
     @Get()
     async getAll() {
-        const result = await this.tagsService.getTags();   
+        const result = await this.tagsService.getTags();
         return isGet(result);
     }
 
     @Get('pagination')
-    async getPagination(
-        @Query('page') page: string = '1',
-        @Query('limit') limit: string = '10'
-    ) {
-        const result = await this.tagsService.getTagsPagination(
-            parseInt(page),
-            parseInt(limit)
-        );
+    async getPagination(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
+        const result = await this.tagsService.getTagsPagination(parseInt(page), parseInt(limit));
         return isGet(result);
     }
 
@@ -31,10 +25,7 @@ export class TagsController {
     }
 
     @Get('search')
-    async searchTags(
-        @Query('name') name?: string,
-        @Query('status') status?: "Active" | "UnActive" | "Other"
-    ) {
+    async searchTags(@Query('name') name?: string, @Query('status') status?: 'Active' | 'UnActive' | 'Other') {
         const result = await this.tagsService.searchTags({ name, status });
         return isGet(result);
     }
@@ -46,10 +37,7 @@ export class TagsController {
     }
 
     @Put(':id')
-    async update(
-        @Param('id') id: string,
-        @Body() body: { name?: string, status?: "Active" | "UnActive" | "Other" }
-    ) {
+    async update(@Param('id') id: string, @Body() body: { name?: string; status?: 'Active' | 'UnActive' | 'Other' }) {
         const result = await this.tagsService.updateTag(id, body);
         return isPut(result);
     }

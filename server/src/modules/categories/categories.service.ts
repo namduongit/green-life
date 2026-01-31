@@ -1,27 +1,28 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
-import { PrismaService } from "../../configs/prisma-client.config";
-import { CreateCategoryDto } from "./dto/create-category.dto";
-import { CommonStatus } from "prisma/generated/client";
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../../configs/prisma-client.config';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { CommonStatus } from 'prisma/generated/client';
+import { toSlug } from 'src/utils/toSlug.utils';
 
 @Injectable()
 export class CategoriesService {
-    constructor(private prismaService: PrismaService) { }
+    constructor(private prismaService: PrismaService) {}
 
     async getCategories() {
         const result = await this.prismaService.prismaClient.categories.findMany({
             where: {
-                isDelete: false
+                isDelete: false,
             },
             orderBy: {
-                createdAt: 'desc'
-            }
+                createdAt: 'desc',
+            },
         });
         return result;
     }
 
     async getCategoriesPagination(page: number, limit: number) {
         if (page < 1 || limit < 1) {
-            throw new BadRequestException("Số trang và số lượng phải lớn hơn 0");
+            throw new BadRequestException('Số trang và số lượng phải lớn hơn 0');
         }
 
         const skip = (page - 1) * limit;
@@ -29,19 +30,19 @@ export class CategoriesService {
         const [categories, total] = await Promise.all([
             this.prismaService.prismaClient.categories.findMany({
                 where: {
-                    isDelete: false
+                    isDelete: false,
                 },
                 skip,
                 take: limit,
                 orderBy: {
-                    createdAt: 'desc'
-                }
+                    createdAt: 'desc',
+                },
             }),
             this.prismaService.prismaClient.categories.count({
                 where: {
-                    isDelete: false
-                }
-            })
+                    isDelete: false,
+                },
+            }),
         ]);
 
         return {
@@ -50,36 +51,36 @@ export class CategoriesService {
                 page,
                 limit,
                 total,
-                totalPages: Math.ceil(total / limit)
-            }
+                totalPages: Math.ceil(total / limit),
+            },
         };
     }
 
     async getCategoryById(id: string) {
         const category = await this.prismaService.prismaClient.categories.findUnique({
-            where: { id }
+            where: { id },
         });
 
         if (!category) {
-            throw new NotFoundException("Không tìm thấy danh mục");
+            throw new NotFoundException('Không tìm thấy danh mục');
         }
 
         if (category.isDelete) {
-            throw new NotFoundException("Không thể lấy danh mục bị xóa");
+            throw new NotFoundException('Không thể lấy danh mục bị xóa');
         }
 
         return category;
     }
 
-    async searchCategories(conditions: { name?: string; status?: "Active" | "UnActive" | "Other" }) {
+    async searchCategories(conditions: { name?: string; status?: 'Active' | 'UnActive' | 'Other' }) {
         const where: any = {
-            isDelete: false
+            isDelete: false,
         };
 
         if (conditions.name) {
             where.name = {
                 $regex: conditions.name,
-                $options: 'i' // Case insensitive
+                $options: 'i', // Case insensitive
             };
         }
 
@@ -90,8 +91,8 @@ export class CategoriesService {
         const result = await this.prismaService.prismaClient.categories.findMany({
             where,
             orderBy: {
-                createdAt: 'desc'
-            }
+                createdAt: 'desc',
+            },
         });
 
         return result;
@@ -101,35 +102,36 @@ export class CategoriesService {
         const existingCategory = await this.prismaService.prismaClient.categories.findFirst({
             where: {
                 name: body.name,
-                isDelete: false
-            }
+                isDelete: false,
+            },
         });
 
         if (existingCategory) {
-            throw new BadRequestException("Tên của danh mục này đã tồn tại");
+            throw new BadRequestException('Tên của danh mục này đã tồn tại');
         }
 
         const newCategory = await this.prismaService.prismaClient.categories.create({
             data: {
                 name: body.name,
-                status: (body.status as CommonStatus) ?? CommonStatus.Other
-            }
+                status: (body.status as CommonStatus) ?? CommonStatus.Other,
+                slug: toSlug(body.name),
+            },
         });
 
         return newCategory;
     }
 
-    async updateCategory(id: string, body: { name?: string; status?: "Active" | "UnActive" | "Other" }) {
+    async updateCategory(id: string, body: { name?: string; status?: 'Active' | 'UnActive' | 'Other' }) {
         const category = await this.prismaService.prismaClient.categories.findUnique({
-            where: { id }
+            where: { id },
         });
 
         if (!category) {
-            throw new NotFoundException("Không tìm thấy danh mục");
+            throw new NotFoundException('Không tìm thấy danh mục');
         }
 
         if (category.isDelete) {
-            throw new BadRequestException("Không thể cập nhật danh mục bị xóa");
+            throw new BadRequestException('Không thể cập nhật danh mục bị xóa');
         }
 
         if (body.name && body.name !== category.name) {
@@ -137,12 +139,12 @@ export class CategoriesService {
                 where: {
                     name: body.name,
                     isDelete: false,
-                    id: { not: id }
-                }
+                    id: { not: id },
+                },
             });
 
             if (existingCategory) {
-                throw new BadRequestException("Tên danh mục này đã được sử dụng");
+                throw new BadRequestException('Tên danh mục này đã được sử dụng');
             }
         }
 
@@ -150,8 +152,8 @@ export class CategoriesService {
             where: { id },
             data: {
                 name: body.name,
-                status: body.status
-            }
+                status: body.status,
+            },
         });
 
         return updatedCategory;
@@ -159,22 +161,22 @@ export class CategoriesService {
 
     async softDeleteCategory(id: string) {
         const category = await this.prismaService.prismaClient.categories.findUnique({
-            where: { id }
+            where: { id },
         });
 
         if (!category) {
-            throw new NotFoundException("Không tìm thấy danh mục");
+            throw new NotFoundException('Không tìm thấy danh mục');
         }
 
         if (category.isDelete) {
-            throw new BadRequestException("Danh mục này đã được xóa");
+            throw new BadRequestException('Danh mục này đã được xóa');
         }
 
         const deletedCategory = await this.prismaService.prismaClient.categories.update({
             where: { id },
             data: {
-                isDelete: true
-            }
+                isDelete: true,
+            },
         });
 
         return deletedCategory;

@@ -1,33 +1,28 @@
-import { Injectable } from "@nestjs/common";
-import { PaymentRep } from "./dto/payment-response.type";
-import { PaymentType } from "prisma/generated/enums";
-import { CreatePaymentDto } from "./dto/create-payment.dto";
-import { VNPayConstants } from "src/constants/vnpay.constants";
-import { Request } from "express";
-import { PaymentUtils } from "src/utils/payment.utils";
-import { encode, stringify } from "querystring";
-import { CryptoUtils } from "src/utils/crypto.utils";
-import { MomoConstants } from "src/constants/momo.constants";
-import QueryString from "qs";
+import { Injectable } from '@nestjs/common';
+import { PaymentRep } from './dto/payment-response.type';
+import { PaymentType } from 'prisma/generated/enums';
+import { CreatePaymentDto } from './dto/create-payment.dto';
+import { VNPayConstants } from 'src/constants/vnpay.constants';
+import { Request } from 'express';
+import { PaymentUtils } from 'src/utils/payment.utils';
+import { encode, stringify } from 'querystring';
+import { CryptoUtils } from 'src/utils/crypto.utils';
+import { MomoConstants } from 'src/constants/momo.constants';
+import QueryString from 'qs';
 
-import { createHash} from "crypto"
-import axios from "axios";
+import { createHash } from 'crypto';
+import axios from 'axios';
 
 @Injectable()
 export class PaymentsService {
     constructor(
         private readonly paymentUtils: PaymentUtils,
-        private readonly cryptoUtils: CryptoUtils
+        private readonly cryptoUtils: CryptoUtils,
     ) {}
 
     /** Call get QR/Link checkout */
-    async getCheckout(
-        req: Request,
-        type: PaymentType, 
-        body: CreatePaymentDto
-    ): Promise<PaymentRep> {
-
-        return {}
+    async getCheckout(req: Request, type: PaymentType, body: CreatePaymentDto): Promise<PaymentRep> {
+        return {};
     }
 
     async callVnpay(ipAdress: string, createPaymentDto: CreatePaymentDto) {
@@ -40,9 +35,9 @@ export class PaymentsService {
         const orderId = Date.now();
 
         // Optional
-        const bankCode = "";
-        
-        const locale = "vn";
+        const bankCode = '';
+
+        const locale = 'vn';
         const currCode = 'VND';
 
         let vnp_Params: Record<string, any> = {};
@@ -56,8 +51,8 @@ export class PaymentsService {
         vnp_Params['vnp_OrderType'] = 'other';
         vnp_Params['vnp_Amount'] = createPaymentDto.totalAmount * 100;
         vnp_Params['vnp_ReturnUrl'] = returnUrl;
-        vnp_Params['vnp_IpAddr'] = "127.0.0.1";
-        vnp_Params['vnp_CreateDate'] = this.paymentUtils.formatDate("YYYYMMDDHHmmss");
+        vnp_Params['vnp_IpAddr'] = '127.0.0.1';
+        vnp_Params['vnp_CreateDate'] = this.paymentUtils.formatDate('YYYYMMDDHHmmss');
         vnp_Params = this.paymentUtils.sortObject(vnp_Params);
 
         const signature = QueryString.stringify(vnp_Params, { encode: false });
@@ -65,7 +60,7 @@ export class PaymentsService {
         vnp_Params['vnp_SecureHash'] = signed;
 
         const redirectUrl = vnpUrl + '?' + QueryString.stringify(vnp_Params, { encode: false });
-        console.log(redirectUrl)
+        console.log(redirectUrl);
     }
 
     async callMomo(createPaymentDto: CreatePaymentDto) {
@@ -79,7 +74,7 @@ export class PaymentsService {
 
         const orderId = createPaymentDto.id;
 
-        let momo_Params: any = {};  
+        let momo_Params: any = {};
         momo_Params['partnerCode'] = partnerCode;
         momo_Params['orderId'] = orderId;
 
@@ -103,8 +98,8 @@ export class PaymentsService {
             partnerCode: partnerCode,
             redirectUrl: returnUrl,
             requestId: requestId,
-            requestType: 'captureWallet'
-        }
+            requestType: 'captureWallet',
+        };
         const signature = QueryString.stringify(hashData, { encode: false });
         const signed = this.cryptoUtils.encryptSignMomo(signature, secretKey);
         momo_Params['signature'] = signed;
@@ -112,9 +107,9 @@ export class PaymentsService {
         console.log(QueryString.stringify(momo_Params, { encode: false }));
         try {
             const response = await axios.post(`${enpoint}/create`, momo_Params);
-           console.log(response.data)
+            console.log(response.data);
         } catch (error: any) {
-            console.log("Error: ", error);
+            console.log('Error: ', error);
         }
     }
 }

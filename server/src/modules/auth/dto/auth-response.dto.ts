@@ -1,16 +1,16 @@
 type RegisterRep = {
-    uid: string,
-    email: string
-}
+    uid: string;
+    email: string;
+};
 
 type LoginRep = {
-    uid: string,
-    email: string,
-    accessToken: string,
+    uid: string;
+    email: string;
+    accessToken: string;
     time: {
-        issuedAt: number,
-        expiresAt: number
-    }
-}
+        issuedAt: number;
+        expiresAt: number;
+    };
+};
 
-export type { LoginRep, RegisterRep }
+export type { LoginRep, RegisterRep };

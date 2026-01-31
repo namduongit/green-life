@@ -9,6 +9,9 @@ import CartPage from './pages/cart/cart'
 import PaymentPage from './pages/payment/payment'
 import { ToastMessageProvider } from './contexts/toast-message/toast-message'
 import { ModalConfirmProvider } from './contexts/modal-confirm/modal-confirm'
+import AdminDashboard from './pages/admin-page/dashboard/dashboard'
+import AdminLayout from './pages/admin-page/layout'
+import AdminAccount from './pages/admin-page/account/account'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -16,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
       <ModalConfirmProvider>
         <ToastMessageProvider>
           <Routes>
+
             <Route path='/' element={<Layout />}>
               {/* Home page */}
               <Route path='/' element={<HomePage />} />
@@ -27,6 +31,14 @@ createRoot(document.getElementById('root')!).render(
               <Route path='/page/cart' element={<CartPage />} />
               <Route path='/page/payment' element={<PaymentPage />} />
             </Route>
+
+            {/* Admin service page */}
+            <Route path='/admin' element={<AdminLayout />} >
+              <Route path='/admin/' element={<AdminDashboard />} />
+              <Route path='/admin/dashboard' element={<AdminDashboard />} />
+              <Route path='/admin/accounts' element={<AdminAccount />} />
+            </Route>
+
           </Routes>
         </ToastMessageProvider>
       </ModalConfirmProvider>

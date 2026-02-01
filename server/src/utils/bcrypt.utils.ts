@@ -1,5 +1,5 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
-import bcrypt from "bcrypt";
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import bcrypt from 'bcrypt';
 
 @Injectable()
 export class BcryptUtils {
@@ -19,7 +19,7 @@ export class BcryptUtils {
             const hashedPassword = await bcrypt.hash(password, salt);
             return hashedPassword;
         } catch (error: any) {
-            console.log("Bcrypt: Fail to hash password - error: ", error);
+            console.log('Bcrypt: Fail to hash password - error: ', error);
             throw new InternalServerErrorException();
         }
     }
@@ -29,7 +29,7 @@ export class BcryptUtils {
             const isMatch = await bcrypt.compare(plainPassword, hashedPassword);
             return isMatch;
         } catch (error: any) {
-            console.log("Bcrypt: Fail to compare password - error: ", error);
+            console.log('Bcrypt: Fail to compare password - error: ', error);
             throw new InternalServerErrorException();
         }
     }

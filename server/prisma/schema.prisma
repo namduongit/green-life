@@ -121,6 +121,7 @@ model Properties {
 model Products {
   id           String       @id @default(auto()) @map("_id") @db.ObjectId
   currentStock Int          @default(0)
+  price        Int
   status       CommonStatus @default(Other)
 
   categoryId String     @db.ObjectId

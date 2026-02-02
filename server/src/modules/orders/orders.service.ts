@@ -79,7 +79,7 @@ export class OrdersService {
                 );
             }
 
-            const price = product.price || 0;
+            const price = product.property?.price || 0;
             const itemTotal = price * item.quantity;
             totalAmount += itemTotal;
 

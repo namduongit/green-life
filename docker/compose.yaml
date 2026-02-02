@@ -35,6 +35,19 @@ services:
     networks:
       - mongo-network
 
+  # mongo-express:
+  #   image: mongo-express
+  #   restart: always
+  #   ports:
+  #     - 8081:8081
+  #   environment:
+  #     ME_CONFIG_MONGODB_URL: mongodb://mongo?replicaSet=rs0&retryWrites=true&directConnection=true
+  #     ME_CONFIG_BASICAUTH_ENABLED: false
+  #   depends_on:
+  #     - mongo
+  #   networks:
+  #     - mongo-network
+
 networks:
   mongo-network:
     driver: bridge

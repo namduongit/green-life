@@ -1,26 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from "@nestjs/common";
-import { CategoriesService } from "./categories.service";
-import { isCreate, isDelete, isGet, isPut, RestResponse } from "src/utils/response.utils";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { CategoriesService } from './categories.service';
+import { isCreate, isDelete, isGet, isPut } from 'src/utils/response.utils';
 
-@Controller("/api/categories")
+@Controller('/api/categories')
 export class CategoriesController {
     constructor(private categoriesService: CategoriesService) {}
 
     @Get()
     async getAll() {
-        const result = await this.categoriesService.getCategories();   
+        const result = await this.categoriesService.getCategories();
         return isGet(result);
     }
 
     @Get('pagination')
-    async getPagination(
-        @Query('page') page: string = '1',
-        @Query('limit') limit: string = '10'
-    ) {
-        const result = await this.categoriesService.getCategoriesPagination(
-            parseInt(page),
-            parseInt(limit)
-        );
+    async getPagination(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
+        const result = await this.categoriesService.getCategoriesPagination(parseInt(page), parseInt(limit));
         return isGet(result);
     }
 
@@ -31,10 +25,7 @@ export class CategoriesController {
     }
 
     @Get('search')
-    async searchCategories(
-        @Query('name') name?: string,
-        @Query('status') status?: "Active" | "UnActive" | "Other"
-    ) {
+    async searchCategories(@Query('name') name?: string, @Query('status') status?: 'Active' | 'UnActive' | 'Other') {
         const result = await this.categoriesService.searchCategories({ name, status });
         return isGet(result);
     }
@@ -46,10 +37,7 @@ export class CategoriesController {
     }
 
     @Put(':id')
-    async update(
-        @Param('id') id: string,
-        @Body() body: { name?: string, status?: "Active" | "UnActive" | "Other" }
-    ) {
+    async update(@Param('id') id: string, @Body() body: { name?: string; status?: 'Active' | 'UnActive' | 'Other' }) {
         const result = await this.categoriesService.updateCategory(id, body);
         return isPut(result);
     }

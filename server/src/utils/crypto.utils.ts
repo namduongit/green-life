@@ -1,11 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { createHash, createHmac } from "crypto";
+import { Injectable } from '@nestjs/common';
+import { createHash, createHmac } from 'crypto';
 
 @Injectable()
 export class CryptoUtils {
     public encryptSignVnpay(signature: string, secretKey: string) {
-        const hmac = createHmac("sha512", secretKey);
-        const signed = hmac.update(new Buffer(signature, 'utf-8')).digest("hex");
+        const hmac = createHmac('sha512', secretKey);
+        const signed = hmac.update(new Buffer(signature, 'utf-8')).digest('hex');
         return signed;
     }
 

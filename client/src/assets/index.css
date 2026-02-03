@@ -66,6 +66,10 @@ html {
     transition: all 500ms;
 }
 
+/* Loading form animation [ButtonForm] */
+.animate-loading {
+    animation: loading-form 500ms linear infinite;
+}
 @keyframes loading-form {
     from {
         transform: rotate(0deg);
@@ -75,20 +79,41 @@ html {
     }
 }
 
-.animate-loading {
-    animation: loading-form 500ms linear infinite;
-}
-
+/* Slide to left animation [PublicSidebar] */
 .slide-to-left {
     animation: slide-left 300ms ease;
 }
-
 @keyframes slide-left {
     from {
         transform: translateX(-100%);
     }
-
     to {
         transform: translateX(0);
+    }
+}
+
+/* Left to right [Toast] */
+.left-to-right {
+    animation: toast-show 200ms ease;
+}
+@keyframes toast-show {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Dropdown [AdminSidebar] */
+.activate-children {
+    animation: hehe 300ms ease;
+}
+@keyframes hehe {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(0);
     }
 }

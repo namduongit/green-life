@@ -1,11 +1,11 @@
 import { NavLink } from "react-router";
-import logo from "../../assets/icons/logo-header.svg";
-import CartIcon from "../cart-icon/cart-icon";
-import SideBar from "../sidebar/sidebar";
+import logo from "../../../assets/icons/logo-header.svg";
+import CartIcon from "../../cart-icon/cart-icon";
+import PublicSidebar from "../../sidebar/public-sidebar/public-sidebar";
 import { useState } from "react";
-import AuthIcon from "../auth-icon/auth-icon";
+import AuthIcon from "../../auth-icon/auth-icon";
 
-const Header = () => {
+const PublicHeader = () => {
     const [isOpenSidebar, setIsOpenSidebar] = useState<boolean>(false);
 
     return (
@@ -79,9 +79,9 @@ const Header = () => {
                 </div>
             </div>
 
-            <SideBar isOpenSidebar={isOpenSidebar} setIsOpenSidebar={setIsOpenSidebar} />
+            <PublicSidebar isOpenSidebar={isOpenSidebar} setIsOpenSidebar={setIsOpenSidebar} />
         </header>
     )
 }
 
-export default Header;
+export default PublicHeader;

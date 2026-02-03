@@ -50,7 +50,8 @@ const ToastMessageProvider = ({ children }: { children: React.ReactNode }) => {
         <ToastMessageContext.Provider value={{ showToast }}>
             <div className="fixed top-5 end-5 w-60 h-15 z-12">
                 {toasts && toasts.map((toast, idx) => (
-                    <div key={idx} className={`flex items-center ${getBackgroundColor(toast.type)} shadow px-3 py-3 gap-2 border-s-4 ${getBorderColor(toast.type)}`}>
+                    <div key={idx} className={`flex items-center ${getBackgroundColor(toast.type)} 
+                        left-to-right shadow px-3 py-3 gap-2 border-s-4 ${getBorderColor(toast.type)}`}>
                         <div>
                             <div className={`w-4 h-4 rounded-full border-4 ${getBorderColor(toast.type)}`}></div>
                         </div>

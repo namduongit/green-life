@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
 
-const SideBar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: boolean, setIsOpenSidebar: (v: boolean) => void }) => {
+const PublicSidebar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: boolean, setIsOpenSidebar: (v: boolean) => void }) => {
     const [searchInput, setSearchInput] = useState<string>("");
     const [isAuth, setIsAuth] = useState<boolean>(false);
 
@@ -133,4 +133,4 @@ const SideBar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: boolean, 
     )
 }
 
-export default SideBar;
+export default PublicSidebar;

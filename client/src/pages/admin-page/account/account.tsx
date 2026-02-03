@@ -2,6 +2,7 @@ import { useState } from "react";
 import InputSearch from "../../../components/input/input-search/input-search";
 import Stats from "../../../components/stats/stats";
 import Table from "../../../components/table/table";
+import type { TableBody, TableHeader } from "../../../components/table/table";
 
 const AdminAccount = () => {
     const [searchInput, setSearchInput] = useState<string>("");
@@ -30,6 +31,39 @@ const AdminAccount = () => {
             createDate: "20/01/2026",
         }
     ]
+
+    const tableHead: TableHeader = ["# UID", "Email", "Role", "Status", "Create date", "Actions"];
+    const tableBody: TableBody = accounts.map((account) => ([
+        { string: { content: account.uid }, clipboard: account.uid },
+        account.email,
+        {
+            reactNode: (
+                <div>
+                    <span className={`px-2 py-1 rounded ${account.role === "Admin" ? "text-blue-600 bg-blue-100" : "text-gray-600 bg-gray-100"}`}>
+                        {account.role === "Admin" ? "Quản trị viên" : "Người dùng"}
+                    </span>
+                </div>
+            )
+        },
+        {
+            reactNode: (
+                <div>
+                    <span className={`px-2 py-1 rounded ${account.status === "Active" ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"}`}>
+                        {account.status === "Active" ? "Hoạt động" : "Khóa"}
+                    </span>
+                </div>
+            )
+        },
+        account.createDate,
+        {
+            reactNode: (
+                <div className="flex items-center gap-2">
+                    <button className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50">Sửa</button>
+                    <button className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600 hover:bg-red-50">Khóa</button>
+                </div>
+            )
+        },
+    ]));
 
     return (
         <div className="px-8 pt-5 space-y-5">
@@ -102,8 +136,9 @@ const AdminAccount = () => {
 
             <div>
                 <Table
-                    tableHead={[ "# UID", "Email", "Role", "Status", "Create date", "Actions" ]}
-                    tableBody={[]} />
+                    tableHead={tableHead}
+                    tableBody={tableBody}
+                    />
             </div>
         </div>
     )

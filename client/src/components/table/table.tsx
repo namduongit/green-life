@@ -1,33 +1,25 @@
 import { useToastContext } from "../../contexts/toast-message/toast-message"
 
-type TableCol = {
+export type TableCol = {
     string?: {
         content: string,
         className?: string
     }
+    reactNode?: React.ReactNode,
+    clipboard?: string
+} | string;
 
-    reactNode?: {
-        content: React.ReactNode,
-        isClipboard?: {
-            contentCoppy: string
-        }
-    },
+/** Row in table body has many columns */
+export type TableRow = TableCol[];
 
-    icon?: {
-        position: "start" | "end",
-        icon?: React.ReactNode,
-        content?: string
-    }
-}
+/** In table header has many columns */
+export type TableHeader = TableCol[] | string[];
+/** In table body has many rows */
+export type TableBody = TableRow[];
 
-type TableRow = TableCol[];
-
-type TableHeader = string[] | TableCol[];
-type TableBody = TableRow[];
-
-type TableProps = {
+export type TableProps = {
     tableHead: TableHeader,
-    tableBody: TableBody[]
+    tableBody: TableBody
 }
 
 const Table = (prop: TableProps) => {
@@ -41,48 +33,16 @@ const Table = (prop: TableProps) => {
     return (
         <div className="rounded">
             <div className="flex px-2 py-1 text-sm font-semibold bg-gray-50 border border-gray-300 rounded-t-md">
-                {prop.tableHead.map((col, index) => (
-                    <div key={index} className="flex-1">
+                {prop.tableHead.map((col, idx) => (
+                    <div key={idx} className="flex-1">    
                         {typeof (col) === "string" ? (
                             <span>
                                 {col}
                             </span>
                         ) : (
-                            col.string ? (
-                                <span className={col.string.className}>{col.string.content}</span>
-                            ) :
-                                col.reactNode ? (
-                                    col.reactNode.isClipboard && (
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => handleCopy(col.reactNode?.isClipboard?.contentCoppy!)}
-                                                className="ring ring-gray-300 w-5 h-5 flex items-center justify-center rounded text-sm p-3 cursor-pointer hover:bg-gray-100"
-                                            >
-                                                <i className="fa-regular fa-clipboard"></i>
-                                            </button>
-                                            <span>{col.reactNode.content}</span>
-                                        </div>
-                                    )
-                                ) :
-                                    col.icon ? (
-                                        <div>
-                                            {col.icon?.position === "start" && (
-                                                col.icon.icon
-                                            )}
-
-                                            {col.icon?.content && (
-                                                <span>
-                                                    {col.icon?.content}
-                                                </span>
-                                            )}
-
-                                            {col.icon?.position === "end" && (
-                                                col.icon.icon
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div>Non content</div>
-                                    )
+                            <div>
+                                {/* Do later */}
+                            </div>
                         )}
                     </div>
                 ))}
@@ -92,7 +52,35 @@ const Table = (prop: TableProps) => {
                 {prop.tableBody.map((row, idx) => (
                     <div key={idx} className="flex px-2 py-2 border-s border-e border-b border-gray-300">
                         {row.map((col, idx) => (
-                            <div key={idx} className="flex-1">Heheh</div>
+                            <div key={idx} className="flex-1">
+                                {typeof (col) === "string" ? (
+                                    <span>
+                                        {col}
+                                    </span>
+                                ) : (
+                                    <div>
+                                        {col.string ? (
+                                            col.clipboard ? (
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleCopy(col.clipboard!)}
+                                                        className="ring ring-gray-300 w-5 h-5 flex items-center justify-center rounded text-sm p-3 cursor-pointer hover:bg-gray-100"
+                                                    >
+                                                        <i className="fa-regular fa-clipboard"></i>
+                                                    </button>
+                                                    <span className={col.string.className}>{col.string.content}</span>
+                                                </div>
+                                            ) : (
+                                                <span className={col.string.className}>{col.string.content}</span>
+                                            )
+                                        ) : col.reactNode ? (
+                                                col.reactNode
+                                        ) : (
+                                            <></>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         ))}
                     </div>
                 ))}

@@ -26,7 +26,7 @@ const AdminSidebar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: bool
                 {
                     icon: "fa-solid fa-box-archive",
                     des: "Sản phẩm",
-                    url: '/products'
+                    url: 'products'
                 },
                 {
                     icon: "fa-solid fa-mattress-pillow",

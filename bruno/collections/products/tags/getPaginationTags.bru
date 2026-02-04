@@ -1,0 +1,21 @@
+meta {
+  name: getPaginationTags
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{URL}}/api/tags?page=1&limit=1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  limit: 1
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,20 @@
+meta {
+  name: deleteUser
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{URL}}/api/users/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

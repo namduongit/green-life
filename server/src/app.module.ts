@@ -7,8 +7,6 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { UsersModule } from './modules/users/users.module';
-import { CartsModule } from './modules/carts/carts.module';
-import { AddressesModule } from './modules/addresses/addresses.module';
 
 /**
  * Explain:
@@ -30,8 +28,6 @@ import { AddressesModule } from './modules/addresses/addresses.module';
         UsersModule,
         /** Payment */
         PaymentsModule,
-        CartsModule,
-        AddressesModule,
     ],
     // Utility providers
     providers: [],

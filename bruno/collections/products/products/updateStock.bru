@@ -1,0 +1,26 @@
+meta {
+  name: updateStock
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{URL}}/api/products/:id/stock
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+}
+
+body:json {
+  {
+    "stock": 1000
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

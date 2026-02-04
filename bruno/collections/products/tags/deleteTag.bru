@@ -1,0 +1,20 @@
+meta {
+  name: deleteTag
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{URL}}/api/tags/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 697b3693c93cd01872f0b852
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

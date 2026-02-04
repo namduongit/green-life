@@ -81,6 +81,7 @@ async function main() {
                             length: 10,
                             width: 10,
                             height: 10,
+                            price: parseFloat(faker.commerce.price({ min: 1, max: 1000 }) || '0'),
                         },
                     },
                 },

@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "src/configs/prisma-client.config";
-import { CreateOrderDto } from "./dto/create-order.dto";
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/configs/prisma-client.config';
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -12,11 +12,11 @@ export class OrdersService {
                 account: true,
                 orderItems: {
                     include: {
-                        product: true
-                    }
+                        product: true,
+                    },
                 },
-                payment: true
-            }
+                payment: true,
+            },
         });
 
         return orders;
@@ -25,8 +25,8 @@ export class OrdersService {
     async getOrderById(id: string) {
         const order = await this.prismaService.prismaClient.orders.findUnique({
             where: {
-                id: id
-            }
+                id: id,
+            },
         });
 
         if (!order) throw new NotFoundException(`Không có order ${id}`);
@@ -49,7 +49,7 @@ export class OrdersService {
             throw new BadRequestException('Account đã bị khóa');
         }
 
-        const productIds = items.map(item => item.productId);
+        const productIds = items.map((item) => item.productId);
         const products = await this.prismaService.prismaClient.products.findMany({
             where: {
                 id: { in: productIds },
@@ -67,16 +67,14 @@ export class OrdersService {
         const orderItemsData: { productId: string; quantity: number; price: number }[] = [];
 
         for (const item of items) {
-            const product = products.find(p => p.id === item.productId);
+            const product = products.find((p) => p.id === item.productId);
 
             if (product?.status !== 'Active') {
                 throw new BadRequestException(`Sản phẩm ${product?.id} không khả dụng`);
             }
 
             if (product.currentStock < item.quantity) {
-                throw new BadRequestException(
-                    `Không đủ số lượng cho sản phẩm ${product.id}`
-                );
+                throw new BadRequestException(`Không đủ số lượng cho sản phẩm ${product.id}`);
             }
 
             const price = product.property?.price || 0;
@@ -101,7 +99,6 @@ export class OrdersService {
         const fullAddress = `${address.home}, ${address.city}, ${address.province}`;
 
         const order = await this.prismaService.prismaClient.$transaction(async (prisma) => {
-
             const newOrder = await prisma.orders.create({
                 data: {
                     accountId,
@@ -153,7 +150,6 @@ export class OrdersService {
 
             return newOrder;
         });
-
 
         // Xử lý phát đi event để thanh toán
 

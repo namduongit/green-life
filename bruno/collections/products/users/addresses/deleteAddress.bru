@@ -1,0 +1,21 @@
+meta {
+  name: deleteAddress
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{URL}}/api/users/:id/address/:addressId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+  addressId: 697af6f445e13eca1e401174
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

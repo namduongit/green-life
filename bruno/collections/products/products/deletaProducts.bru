@@ -1,0 +1,26 @@
+meta {
+  name: deletaProducts
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{URL}}/api/products/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 697b3791dc66ec33f3251ef3
+}
+
+body:json {
+  {
+    "stock": 1000
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

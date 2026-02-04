@@ -6,6 +6,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
 import { TagsModule } from './modules/tags/tags.module';
+import { UsersModule } from './modules/users/users.module';
 
 /**
  * Explain:
@@ -24,6 +25,7 @@ import { TagsModule } from './modules/tags/tags.module';
         TagsModule,
         CategoriesModule,
         ProductsModule,
+        UsersModule,
         /** Payment */
         PaymentsModule,
     ],

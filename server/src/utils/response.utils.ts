@@ -16,51 +16,5 @@ type RestResponse<T> = {
     error: any;
 };
 
-/** used in auth controller */
-export const isAuth = <T>(data: T) => {
-    return {
-        statusCode: 200,
-        message: 'Request Success',
-        data: data,
-        error: null,
-    } as RestResponse<T>;
-};
-
-/**  */
-export const isGet = <T>(data: T) => {
-    return {
-        statusCode: 200,
-        message: 'Request Success',
-        data: data,
-        error: null,
-    } as RestResponse<T>;
-};
-
-export const isCreate = <T>(data: T) => {
-    return {
-        statusCode: 201,
-        message: 'Request Success',
-        data: data,
-        error: null,
-    } as RestResponse<T>;
-};
-
-export const isPut = <T>(data: T) => {
-    return {
-        statusCode: 200,
-        message: 'Request Success',
-        data: data,
-        error: null,
-    } as RestResponse<T>;
-};
-
-export const isDelete = <T>(data: T) => {
-    return {
-        statusCode: 200,
-        message: 'Request Success',
-        data: data,
-        error: null,
-    } as RestResponse<T>;
-};
 
 export type { RestResponse };

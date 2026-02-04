@@ -1,0 +1,20 @@
+meta {
+  name: deleteCategories
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{URL}}/api/categories/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 697b39fa5ae3affa1acdd7eb
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

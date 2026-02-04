@@ -1,0 +1,29 @@
+meta {
+  name: getProducts
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{URL}}/api/products?property.name_contains=test
+  body: none
+  auth: inherit
+}
+
+params:query {
+  property.name_contains: test
+  ~id: 697af6f445e13eca1e401173
+  ~property.id: 
+  ~property.id_in: 
+  ~category.id: 697af6f445e13eca1e40116f
+  ~page: 
+  ~order: 
+  ~pageSize: 1
+  ~tagItems.some.tag.id: 697af6f445e13eca1e401172
+  ~property.description_contains: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

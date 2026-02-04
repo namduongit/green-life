@@ -1,0 +1,40 @@
+meta {
+  name: createProducts
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{URL}}/api/products
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "currentStock": 22,
+    "status": "Other",
+    "categoryId": "697af6f445e13eca1e40116f",
+    "property": {
+      "urlImage": "https://picsum.photos/seed/aUBUwkI/400/400",
+      "name": "test ",
+      "description": "test",
+      "weight": "174",
+      "unit": "Gram",
+      "length": 10,
+      "width": 10,
+      "height": 10
+    },
+    "tags": [
+      {
+        "id": "697af6f445e13eca1e401172",
+        "name": "Sale"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,7 +1,9 @@
 import { IsEnum } from 'class-validator';
-import { ProductStatus, type ProductStatusType } from '../entities/products.entitie';
+import { CommonStatus } from 'prisma/generated/enums';
 
 export class UpdateProductStatusDto {
-    @IsEnum(ProductStatus)
-    readonly status: ProductStatusType;
+    @IsEnum(CommonStatus, {
+        message: 'Trạng thái không hợp lệ',
+    })
+    readonly status: CommonStatus;
 }

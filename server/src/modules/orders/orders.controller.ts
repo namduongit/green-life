@@ -1,7 +1,6 @@
-import { Controller, Get, Param, Post, Body, HttpCode, HttpStatus } from "@nestjs/common";
-import { OrdersService } from "./orders.service";
-import { isGet, isCreate } from "src/utils/response.utils";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CreateOrderDto } from "./dto/create-order.dto";
+import { OrdersService } from "./orders.service";
 
 @Controller('/api/orders')
 export class OrdersController {
@@ -10,19 +9,19 @@ export class OrdersController {
     @Get()
     async getAll() {
         const result = await this.ordersService.getAllOrders();
-        return isGet(result);
+        return result;
     }
 
     @Get('/:id')
     async getOrderById(@Param('id') id: string) {
         const result = await this.ordersService.getOrderById(id);
-        return isGet(result);
+        return result;
     }
 
     @Post()
     @HttpCode(HttpStatus.CREATED)
     async createOrder(@Body() createOrderDto: CreateOrderDto) {
         const result = await this.ordersService.createOrder(createOrderDto);
-        return isCreate(result);
+        return result;
     }
 }

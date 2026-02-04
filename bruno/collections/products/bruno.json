@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "grenn_life",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

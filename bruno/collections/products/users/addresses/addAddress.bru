@@ -1,0 +1,28 @@
+meta {
+  name: addAddress
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{URL}}/api/users/:id/address
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+}
+
+body:json {
+  {
+    "province": "Hồ Chí Minh",
+    "city": "Thủ Đức",
+    "home": "12/34 Example Street"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

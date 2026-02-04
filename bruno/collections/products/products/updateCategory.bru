@@ -1,0 +1,28 @@
+meta {
+  name: updateCategory
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{URL}}/api/products/:id/category
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+}
+
+body:json {
+  {
+    "category": {
+      "id": "123"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

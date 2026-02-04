@@ -1,10 +1,11 @@
-import 'dotenv/config';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import 'dotenv/config';
+import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './filter/http-exception.filter';
 import { LogExceptionFilter } from './filter/log-exception.filter';
 import { PrismaExceptionFilter } from './filter/prisma-exception.filter';
+import { TransformInterceptor } from './interceptors/transform.interceptor';
 
 async function bootstrap() {
     const PORT = process.env.PORT ?? 8000;
@@ -23,6 +24,7 @@ async function bootstrap() {
     app.useGlobalFilters(new LogExceptionFilter());
     app.useGlobalFilters(new PrismaExceptionFilter());
     app.useGlobalFilters(new HttpExceptionFilter());
+    app.useGlobalInterceptors(new TransformInterceptor());
 
     app.useGlobalPipes(
         new ValidationPipe({

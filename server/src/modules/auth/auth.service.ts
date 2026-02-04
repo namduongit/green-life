@@ -32,6 +32,9 @@ export class AuthService {
             data: {
                 email: registerDto.email,
                 password: hashedPassword,
+                cart: {
+                    create: {},
+                }
             },
         });
 

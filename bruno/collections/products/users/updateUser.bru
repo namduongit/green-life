@@ -1,0 +1,28 @@
+meta {
+  name: updateUser
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{URL}}/api/users/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+}
+
+body:json {
+  {
+    "email": "updated@example.com",
+    "password": "123456",
+    "role": "Admin"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

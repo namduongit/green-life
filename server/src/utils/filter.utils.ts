@@ -1,3 +1,6 @@
+import { ArgumentMetadata, BadRequestException, PipeTransform } from '@nestjs/common';
+import { createParser, PrismaWhere, SearchParamsQuery } from 'prisma-searchparams-mapper';
+
 type WhereOperator = 'in' | 'notIn' | 'not' | 'gte' | 'lte' | 'gt' | 'lt' | 'contains' | 'startsWith' | 'endsWith';
 type NonKey = 'AND' | 'OR' | 'NOT';
 
@@ -76,3 +79,25 @@ type DotPath<T, MaxDepth extends number = MaxDepthOfType<T>> = {
 type WhereParamKey<T, MaxDepth extends number = 3> = DotPath<T, MaxDepth> | `${DotPath<T, MaxDepth>}_${WhereOperator}`;
 
 export type FilterKey<T, MaxDepth extends number = 3> = WhereParamKey<T, MaxDepth> | 'order' | 'page';
+
+export abstract class PrismaQueryPipeline<
+    TWhereInput = PrismaWhere,
+    TOrderByInput = Record<string, 'asc' | 'desc'>,
+> implements PipeTransform<SearchParamsQuery<TWhereInput, TOrderByInput>> {
+    abstract getAllowedFilterKeys(): (FilterKey<TWhereInput> | 'pageSize')[];
+    private queyrParser = createParser<TWhereInput, TOrderByInput>();
+
+    transform(value: SearchParamsQuery<TWhereInput, TOrderByInput>, metadata: ArgumentMetadata) {
+        const allowedKeys = this.getAllowedFilterKeys() as unknown as string[];
+        const invalidKeys = Object.keys(value.where || {}).filter((key) => !allowedKeys.includes(key));
+
+        if (invalidKeys.length > 0) {
+            throw new BadRequestException(`Invalid filter fields: ${invalidKeys.join(', ')}`);
+        }
+
+        const pageSize = value['pageSize'] ? Number(value['pageSize']) : undefined;
+        const query = this.queyrParser.parse(value as any, { pageSize });
+
+        return query;
+    }
+}

@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/configs/prisma-client.config';
-import { Product, ProductProperty, ProductStatusType } from './entities/products.entitie';
 import { SearchParamsQuery } from 'prisma-searchparams-mapper';
 import { ProductsOrderByWithRelationInput, ProductsWhereInput } from 'prisma/generated/models';
 import { CreateProductDto } from './dto/createProduct.dto';
+import { CommonStatus } from 'prisma/generated/enums';
+import { Properties } from 'prisma/generated/client';
 
 const INCLUDE_PRODUCT_RELATIONS = {
     category: {
@@ -36,9 +37,7 @@ const INCLUDE_PRODUCT_RELATIONS = {
 export class ProductsService {
     constructor(private readonly prismaService: PrismaService) {}
 
-    async getAllProducts(
-        filter: SearchParamsQuery<ProductsWhereInput, ProductsOrderByWithRelationInput>,
-    ): Promise<Product[]> {
+    async getAllProducts(filter: SearchParamsQuery<ProductsWhereInput, ProductsOrderByWithRelationInput>) {
         const products = await this.prismaService.prismaClient.products.findMany({
             include: INCLUDE_PRODUCT_RELATIONS,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -62,7 +61,7 @@ export class ProductsService {
         return mappedProducts;
     }
 
-    async getProductById(id: string): Promise<Product | null> {
+    async getProductById(id: string) {
         const product = await this.prismaService.prismaClient.products.findUnique({
             where: {
                 id,
@@ -82,7 +81,7 @@ export class ProductsService {
         };
     }
 
-    async createProduct(data: CreateProductDto): Promise<Product> {
+    async createProduct(data: CreateProductDto) {
         const newProduct = await this.prismaService.prismaClient.products.create({
             data: {
                 currentStock: data.currentStock,
@@ -99,6 +98,7 @@ export class ProductsService {
                               length: data.property.length,
                               width: data.property.width,
                               height: data.property.height,
+                              price: data.price,
                           },
                       }
                     : undefined,
@@ -130,7 +130,7 @@ export class ProductsService {
         });
     }
 
-    async changeStock(id: string, newStock: number): Promise<Product | null> {
+    async changeStock(id: string, newStock: number) {
         await this.prismaService.prismaClient.products.update({
             where: {
                 id,
@@ -143,7 +143,7 @@ export class ProductsService {
         return this.getProductById(id);
     }
 
-    async updateStatus(id: string, newStatus: ProductStatusType): Promise<Product | null> {
+    async updateStatus(id: string, newStatus: CommonStatus) {
         await this.prismaService.prismaClient.products.update({
             where: {
                 id,
@@ -156,7 +156,7 @@ export class ProductsService {
         return this.getProductById(id);
     }
 
-    async updateCategory(id: string, categoryId: string): Promise<Product | null> {
+    async updateCategory(id: string, categoryId: string) {
         await this.prismaService.prismaClient.products.update({
             where: {
                 id,
@@ -169,7 +169,7 @@ export class ProductsService {
         return this.getProductById(id);
     }
 
-    async updateTags(id: string, tagIds: string[]): Promise<Product | null> {
+    async updateTags(id: string, tagIds: string[]) {
         await this.prismaService.prismaClient.$transaction(async (prisma) => {
             // First, delete existing tagItems
             await prisma.tagProducts.deleteMany({
@@ -190,7 +190,7 @@ export class ProductsService {
         return this.getProductById(id);
     }
 
-    async updateProperty(id: string, propertyData: Partial<ProductProperty>): Promise<Product | null> {
+    async updateProperty(id: string, propertyData: Partial<Properties>) {
         await this.prismaService.prismaClient.properties.upsert({
             where: {
                 productId: id,
@@ -205,6 +205,7 @@ export class ProductsService {
                 length: propertyData.length || 0,
                 width: propertyData.width || 0,
                 height: propertyData.height || 0,
+                price: propertyData.price || 0,
             },
             update: {
                 urlImage: propertyData.urlImage,
@@ -215,6 +216,7 @@ export class ProductsService {
                 length: propertyData.length,
                 width: propertyData.width,
                 height: propertyData.height,
+                price: propertyData.price,
             },
         });
 

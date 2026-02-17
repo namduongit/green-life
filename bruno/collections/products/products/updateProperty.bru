@@ -1,0 +1,35 @@
+meta {
+  name: updateProperty
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{URL}}/api/products/:id/property
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+}
+
+body:json {
+  {
+    "property": {
+      "urlImage": "https://picsum.photos/seed/aUBUwkI/400/400",
+      "name": "Modern Gold Table",
+      "description": "The sleek and ripe Shoes comes with tan LED lighting for smart functionality",
+      "weight": "174",
+      "unit": "Gram",
+      "length": 10,
+      "width": 10,
+      "height": 10
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

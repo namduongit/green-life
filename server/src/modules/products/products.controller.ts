@@ -1,13 +1,11 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ProductsService } from './products.service';
-import { Product, ProductProperty } from './entities/products.entitie';
-import { isCreate, isDelete, isGet, isPut } from 'src/utils/response.utils';
-import { productsFilterParser, validateProductFilterFields } from './dto/getAllProduct.dto';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CreateProductDto } from './dto/createProduct.dto';
-import { UpdateProductStockDto } from './dto/updateProductStock.dto';
-import { UpdateProductStatusDto } from './dto/updateProductStatus.dto';
-import { UpdateProductTagsDto } from './dto/updateProductTags.dto';
+import { ProductsQueryDto } from './dto/getAllProduct.dto';
 import { UpdateProductPropertyDto } from './dto/updateProductProperty.dto';
+import { UpdateProductStatusDto } from './dto/updateProductStatus.dto';
+import { UpdateProductStockDto } from './dto/updateProductStock.dto';
+import { UpdateProductTagsDto } from './dto/updateProductTags.dto';
+import { ProductsService } from './products.service';
 
 /**
  *
@@ -67,66 +65,68 @@ export class ProductsController {
     constructor(private readonly productsService: ProductsService) {}
 
     @Get('/')
-    async getAllProducts(@Query() searchParams: Record<string, string>) {
-        if (validateProductFilterFields(searchParams as Record<string, unknown>) === false)
-            throw new BadRequestException('Invalid filter fields in query parameters');
+    async getAllProducts(@Query(new ProductsQueryDto()) searchParams: any) {
+        console.log('Parsed Query:', JSON.stringify(searchParams, null, 2));
 
-        const pageSize = searchParams['pageSize'] ? Number(searchParams['pageSize']) : undefined;
-        const query = productsFilterParser.parse(searchParams, { pageSize });
-
-        console.log('Parsed Query:', JSON.stringify(query, null, 2));
-
-        const products = await this.productsService.getAllProducts(query);
-        return isGet(products);
+        const products = await this.productsService.getAllProducts(searchParams);
+        return products;
     }
 
     @Get('/:id')
     async getProductById(@Param('id') id: string) {
         const product = await this.productsService.getProductById(id);
-        return isGet(product);
+        return product;
     }
 
     @Post('/')
     async createProduct(@Body() productData: CreateProductDto) {
         console.log('Create Product Data:', productData);
         const newProduct = await this.productsService.createProduct(productData);
-        return isCreate(newProduct);
+        return newProduct;
     }
 
     @Patch('/:id/stock')
     async changeStock(@Param('id') id: string, @Body() stockData: UpdateProductStockDto) {
         const updatedProduct = await this.productsService.changeStock(id, stockData.stock);
-        return isPut(updatedProduct);
+        return updatedProduct;
     }
 
     @Patch('/:id/status')
     async updateStatus(@Param('id') id: string, @Body() statusData: UpdateProductStatusDto) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         const updatedProduct = await this.productsService.updateStatus(id, statusData.status as any);
-        return isPut(updatedProduct);
+        return updatedProduct;
     }
 
     @Patch('/:id/tags')
     async updateTags(@Param('id') id: string, @Body() tagsData: UpdateProductTagsDto) {
         const updatedProduct = await this.productsService.updateTags(id, tagsData.tags);
-        return isPut(updatedProduct);
+        return updatedProduct;
     }
 
     @Patch('/:id/property')
     async updateProperty(@Param('id') id: string, @Body() propertyData: UpdateProductPropertyDto) {
         const updatedProduct = await this.productsService.updateProperty(id, propertyData.property);
-        return isPut(updatedProduct);
+        return updatedProduct;
     }
 
     @Patch('/:id/category')
-    async updateCategory(@Param('id') id: string, @Body() categoryData: { category: Product['category'] }) {
+    async updateCategory(
+        @Param('id') id: string,
+        @Body()
+        categoryData: {
+            category: {
+                id: string;
+            };
+        },
+    ) {
         const updatedProduct = await this.productsService.updateCategory(id, categoryData.category.id);
-        return isPut(updatedProduct);
+        return updatedProduct;
     }
 
     @Delete('/:id')
     async deleteProduct(@Param('id') id: string) {
         const deletedProduct = await this.productsService.deleteProduct(id);
-        return isDelete(deletedProduct);
+        return deletedProduct;
     }
 }

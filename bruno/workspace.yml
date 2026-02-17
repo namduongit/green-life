@@ -1,0 +1,14 @@
+opencollection: 1.0.0
+info:
+  name: "green_life_swagger"
+  type: workspace
+
+collections:
+  - name: "products"
+    path: "collections/products"
+
+specs:
+
+docs: ''
+
+activeEnvironmentUid: 2cofpt000000000000000

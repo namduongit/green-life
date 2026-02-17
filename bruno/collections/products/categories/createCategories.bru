@@ -1,0 +1,22 @@
+meta {
+  name: createCategories
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{URL}}/api/categories
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "hello"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

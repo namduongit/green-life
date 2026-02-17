@@ -1,0 +1,27 @@
+meta {
+  name: addToCart
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{URL}}/api/users/:id/cart
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+}
+
+body:json {
+  {
+    "productId": "697af6f445e13eca1e401175",
+    "quantity": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

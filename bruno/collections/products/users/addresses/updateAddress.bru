@@ -1,0 +1,29 @@
+meta {
+  name: updateAddress
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{URL}}/api/users/:id/address/:addressId
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 697af6f445e13eca1e401173
+  addressId: 697af6f445e13eca1e401174
+}
+
+body:json {
+  {
+    "province": "Hồ Chí Minh",
+    "city": "Quận 1",
+    "home": "99/1 Updated Street"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

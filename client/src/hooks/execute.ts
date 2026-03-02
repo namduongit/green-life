@@ -1,41 +1,42 @@
 import { useState } from "react"
+import type { AxiosResponse } from "axios";
 
-type QueryResp<T> = [null, T] | [Error, null];
+type RestError = string | string[] | null;
+
+type QueryRespsonse<T> = { data: T | null, errors: RestError } | null;
 
 
 /**
  * hello for (luky)
  */
-export const useExecute = <T> () => {
+export const useExecute = () => {
     const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<Error>();
-    const [data, setData] = useState<T | null>(null)
 
-    const query = async (
-        promiseFunc: Promise<T>,
-    ): Promise<QueryResp<T>> => {
+
+    const query = async <T>(promiseFunc: Promise<AxiosResponse>): Promise<QueryRespsonse<T>> => {
         try {
             setLoading(true);
-            console.log("Thực hiện truy vấn lấy dữ liệu")
+
             const result = await promiseFunc;
             console.log(result)
-
-            setData(result);
-            setLoading(false)
-
-            return [
-                null, result
-            ];
-
+            if (result.data) {
+                setLoading(false);
+                return {
+                    data: result.data.data,
+                    errors: null
+                }
+            }
 
         } catch (error: any) {
-            setError(error) 
-            setLoading(true)
-            return [
-                error, null
-            ]           
+            console.log(error)
+            setLoading(false);
+            return {
+                data: null,
+                errors: error.error
+            }
         }
+        return null;
     }
 
-    return { loading, query, data, error }
+    return { loading, query }
 }

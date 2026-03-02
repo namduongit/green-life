@@ -8,7 +8,7 @@ import { PrismaExceptionFilter } from './filter/prisma-exception.filter';
 import { TransformInterceptor } from './interceptors/transform.interceptor';
 
 async function bootstrap() {
-    const PORT = process.env.PORT ?? 8000;
+    const PORT = process.env.PORT ?? 8100;
     console.log('Server is running on port: ', PORT);
     const app = await NestFactory.create(AppModule, {
         cors: {

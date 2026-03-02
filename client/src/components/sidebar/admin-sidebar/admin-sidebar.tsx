@@ -21,12 +21,12 @@ const AdminSidebar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: bool
                 {
                     icon: "fa-solid fa-user",
                     des: "Tài khoản",
-                    url: "accounts",
+                    url: "/admin/accounts",
                 },
                 {
                     icon: "fa-solid fa-box-archive",
                     des: "Sản phẩm",
-                    url: 'products'
+                    url: '/admin/products'
                 },
                 {
                     icon: "fa-solid fa-mattress-pillow",

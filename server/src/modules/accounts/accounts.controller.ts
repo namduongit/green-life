@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { AccountsService } from './accounts.service';
 import { CreateUserDto } from './dto/create-dto';
 import { UpdateUserDto } from './dto/update-dto';
 import { CreateAddressDto } from '../addresses/dto/create-address-dto';
@@ -8,9 +8,9 @@ import { AddressesService } from '../addresses/addresses.service';
 import { CartsService } from '../carts/carts.service';
 
 @Controller('api/users')
-export class UsersController {
+export class AccountsController {
     constructor(
-        private readonly usersService: UsersService,
+        private readonly usersService: AccountsService,
         private readonly addressesService: AddressesService,
         private readonly cartsService: CartsService,
     ) {}

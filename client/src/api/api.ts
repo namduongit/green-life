@@ -1,11 +1,4 @@
-import axios from "axios";
-
-type RestResponse = {
-    statusCode: number,
-    message: string,
-    error: string | string[],
-    data: any
-}
+import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
 
 const url = import.meta.env.VITE_SERVER_URL;
 
@@ -13,24 +6,34 @@ const api = axios.create({
     baseURL: url
 });
 
+
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    const stored = localStorage.getItem("CURRENT_ACCOUNT");
+    if (stored) {
+        /* Load token from LocalStorage */
+
+        // const parsed: AuthState = JSON.parse(stored) || {};
+        // if (parsed) {
+        //     if (parsed.accessToken) {
+        //         config.headers.Authorization = `Bearer ${parsed.accessToken}`;
+        //     }
+        // }
+        // return config;
+    }
+    localStorage.removeItem("CURRENT_ACCOUNT");
+    return config;
+});
+
 api.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    (error: any) => {
-        /** Error network */
-        if (!error.data) {
-            error.data = {
-                statusCode: 400,
-                message: "Bad Request",
-                error: "Error network",
-                data: null
-            } as RestResponse
+        (response: AxiosResponse) => {
+            return response;
+        },
+        async (error: AxiosError) => {
+            if (error.response?.data) {
+                return Promise.reject(error.response.data);
+            }
+            return Promise.reject(error);
         }
-        /** Catch any error */
-        console.log(error);
-        return error;
-    }   
-);
+    )
 
 export { api };

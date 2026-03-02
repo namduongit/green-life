@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import Layout from './pages/layout'
@@ -12,12 +11,14 @@ import { ModalConfirmProvider } from './contexts/modal-confirm/modal-confirm'
 import AdminDashboard from './pages/admin-page/dashboard/dashboard'
 import AdminLayout from './pages/admin-page/layout'
 import AdminAccount from './pages/admin-page/account/account'
+import { AuthProvider } from './contexts/auth/auth'
+import ProductPage from './pages/product/product'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
     <BrowserRouter>
       <ModalConfirmProvider>
         <ToastMessageProvider>
+          <AuthProvider>
           <Routes>
 
             <Route path='/' element={<Layout />}>
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path='/auth/register' element={<RegisterPage />} />
 
               {/* Feature service page */}
+              <Route path='/page/product' element={<ProductPage />} />
               <Route path='/page/cart' element={<CartPage />} />
               <Route path='/page/payment' element={<PaymentPage />} />
             </Route>
@@ -40,8 +42,8 @@ createRoot(document.getElementById('root')!).render(
             </Route>
 
           </Routes>
+          </AuthProvider>
         </ToastMessageProvider>
       </ModalConfirmProvider>
     </BrowserRouter>
-  </StrictMode>,
 )

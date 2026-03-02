@@ -1,9 +1,11 @@
 import { createContext, useContext, useState } from "react";
 
 const ToastMessageContext = createContext<{
-    showToast: (type: "Success" | "Fail" | "Error" | "Note", message: string) => void
+    showToast: (type: "Success" | "Fail" | "Error" | "Note", message: string) => void,
+    showErrorResponse: (errors: string | string[]) => void
 }>({
-    showToast: () => { }
+    showToast: () => { },
+    showErrorResponse: () => { }
 });
 
 const ToastMessageProvider = ({ children }: { children: React.ReactNode }) => {
@@ -22,6 +24,16 @@ const ToastMessageProvider = ({ children }: { children: React.ReactNode }) => {
         }]);
 
         setTimeout(() => closeToast(id), 3000);
+    }
+
+    const showErrorResponse = (errors: string | string[]) => {
+        if (Array.isArray(errors)) {
+            errors.forEach(error => {
+                showToast("Error", error);
+            })
+        } else {
+            showToast("Error", errors);
+        }
     }
 
     const closeToast = (id: number) => {
@@ -47,8 +59,8 @@ const ToastMessageProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     return (
-        <ToastMessageContext.Provider value={{ showToast }}>
-            <div className="fixed top-5 end-5 w-60 h-15 z-12">
+        <ToastMessageContext.Provider value={{ showToast, showErrorResponse }}>
+            <div className="fixed top-5 end-5 w-60 h-15 space-y-2 z-100">
                 {toasts && toasts.map((toast, idx) => (
                     <div key={idx} className={`flex items-center ${getBackgroundColor(toast.type)} 
                         left-to-right shadow px-3 py-3 gap-2 border-s-4 ${getBorderColor(toast.type)}`}>

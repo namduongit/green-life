@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { login } from "../../services/auth";
+import { login, type LoginRep } from "../../services/auth";
 import ButtonForm from "../../components/button/button-form/button-form";
 import { useExecute } from "../../hooks/execute";
+import { useToastContext } from "../../contexts/toast-message/toast-message";
+import { useAuthContext } from "../../contexts/auth/auth";
 
 const LoginPage = () => {
     const { loading, query } = useExecute();
+    const { showToast, showErrorResponse } = useToastContext();
+    const { saveStateAuth } = useAuthContext();
 
     const [isShowPassword, setIsShowPassword] = useState<boolean>(false);
     const [loginForm, setLoginForm] = useState({
@@ -13,8 +17,16 @@ const LoginPage = () => {
     });
 
     const submitForm = async () => {
-        const response = await query(login(loginForm));
-        console.log(response);
+        const result = await query<LoginRep>(login(loginForm));
+        if (result?.errors) {
+            showErrorResponse(result.errors)
+        } else if (result?.data) {
+            showToast("Success", "Đăng nhập thành công");
+            saveStateAuth(result.data);
+            setTimeout(() => {
+                window.location.href = "/";
+            }, 500);
+        }
     }
 
     return (
@@ -83,7 +95,12 @@ const LoginPage = () => {
                         Chúng tôi chỉ yêu cầu thông tin cần thiết để làm quá trình mua hàng nhanh chóng và dễ dàng hơn.
                     </p>
                     <button className="bg-white ring-2 ring-green-700 rounded-lg px-4 py-2 text-green-700 font-semibold 
-                                        hover:after:content-['⭢'] hover:after:ps-2 hover:text-white hover:bg-green-700 animate-500ms">ĐĂNG KÝ TÀI KHOẢN
+                                        hover:after:content-['⭢'] hover:after:ps-2 hover:text-white hover:bg-green-700 animate-500ms"
+                        onClick={() => {
+                            window.location.href = "/auth/register"
+                        }}
+                    >
+                        ĐĂNG KÝ TÀI KHOẢN
                     </button>
                 </div>
             </div>

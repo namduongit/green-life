@@ -6,7 +6,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
 import { TagsModule } from './modules/tags/tags.module';
-import { UsersModule } from './modules/users/users.module';
+import { AccountsModule } from './modules/accounts/accounts.module';
 
 /**
  * Explain:
@@ -25,7 +25,7 @@ import { UsersModule } from './modules/users/users.module';
         TagsModule,
         CategoriesModule,
         ProductsModule,
-        UsersModule,
+        AccountsModule,
         /** Payment */
         PaymentsModule,
     ],
@@ -34,8 +34,8 @@ import { UsersModule } from './modules/users/users.module';
     // Export utility provider (public)
     exports: [],
 })
-export class AppModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer.apply(LoggerMiddleware).forRoutes(CategoriesController);
-    }
+export class AppModule {
+    // configure(consumer: MiddlewareConsumer) {
+    //     consumer.apply(LoggerMiddleware).forRoutes(CategoriesController);
+    // }
 }

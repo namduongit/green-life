@@ -106,6 +106,8 @@ export class CategoriesService {
             },
         });
 
+        console.log('Existing category: ', existingCategory);
+
         if (existingCategory) {
             throw new BadRequestException('Tên của danh mục này đã tồn tại');
         }

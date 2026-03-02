@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { useExecute } from "../../hooks/execute";
 import { register, type RegisterRep } from "../../services/auth";
-import { useModalConfirmContext } from "../../contexts/modal-confirm/modal-confirm";
 import ButtonForm from "../../components/button/button-form/button-form";
-
+import { useToastContext } from "../../contexts/toast-message/toast-message";
 
 const RegisterPage = () => {
-    const { waitConfirm } = useModalConfirmContext();
-
-    const { loading, query } = useExecute<RegisterRep>();
+    const { query, loading } = useExecute();
+    const { showToast, showErrorResponse } = useToastContext();
 
     const [isShowPassword, setIsShowPassword] = useState<boolean>(false);
     const [registerForm, setRegisterForm] = useState({
@@ -18,8 +16,16 @@ const RegisterPage = () => {
     });
 
     const submitForm = async () => {
-        if (!await waitConfirm()) return;
-        await query(register(registerForm))
+        const result = await query<RegisterRep>(register(registerForm));
+        console.log(result)
+        if (result?.errors) {
+            showErrorResponse(result.errors)
+        } else {
+            showToast("Success", "Đăng ký thành công!");
+            setTimeout(() => {
+                window.location.href = "/auth/login";
+            }, 500);
+        }
     }
 
     return (

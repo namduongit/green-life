@@ -1,4 +1,3 @@
-
 type CategoryRep = {
     id: string;
     name: string;

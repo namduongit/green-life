@@ -27,9 +27,9 @@ export const deActivateAccount = async (id: string) => {
 }
 
 export const activateAccount = async (id: string) => {
-    const response = await api.patch<AccountRep>(`/api/users/${id}/activate`);
+    const response = await api.patch(`/api/users/${id}/activate`);
     return response;
-};
+}
 
 export const getUserAddresses = async (userId: string) => {
     const response = await api.get<AddressRep[]>(

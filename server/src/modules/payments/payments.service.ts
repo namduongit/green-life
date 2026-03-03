@@ -1,115 +1,123 @@
-import { Injectable } from '@nestjs/common';
-import { PaymentRep } from './dto/payment-response.type';
-import { PaymentType } from 'prisma/generated/enums';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { VNPayConstants } from 'src/constants/vnpay.constants';
-import { Request } from 'express';
-import { PaymentUtils } from 'src/utils/payment.utils';
-import { encode, stringify } from 'querystring';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CryptoUtils } from 'src/utils/crypto.utils';
 import { MomoConstants } from 'src/constants/momo.constants';
-import QueryString from 'qs';
-
-import { createHash } from 'crypto';
+import { MomoOptionalOtps, MomoRequireOtps } from './types/momo/momo.type';
+import { PaymentRep } from './dto/payment-response.type';
+import { v1 } from "uuid";
 import axios from 'axios';
+import { MomoCreateRep } from './types/momo/momo.response';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class PaymentsService {
     constructor(
-        private readonly paymentUtils: PaymentUtils,
         private readonly cryptoUtils: CryptoUtils,
-    ) {}
+    ) { }
 
-    /** Call get QR/Link checkout */
-    async getCheckout(req: Request, type: PaymentType, body: CreatePaymentDto): Promise<PaymentRep> {
-        return {};
-    }
+    async paymentMomoCreate(
+        require: MomoRequireOtps,
+        optional?: MomoOptionalOtps
+    ): Promise<PaymentRep> {
+        const requestId = v1();
+        const extraData = Buffer.from(JSON.stringify(require.extraData)).toString('base64');
 
-    async callVnpay(ipAdress: string, createPaymentDto: CreatePaymentDto) {
-        const terminalId = VNPayConstants.terminalId;
-        const secretKey = VNPayConstants.secretKey;
-        const vnpUrl = VNPayConstants.vnpUrl;
-        const returnUrl = VNPayConstants.returnUrl;
+        const signature =
+            `accessKey=${MomoConstants.AccessKey}` +
+            `&amount=${require.total}` +
+            `&extraData=${extraData}` +
+            `&ipnUrl=${MomoConstants.IpnUrl}` +
+            `&orderId=${require.orderId}` +
+            `&orderInfo=${require.orderInfo}` +
+            `&partnerCode=${MomoConstants.PartnerCode}` +
+            `&redirectUrl=${MomoConstants.RedirectUrl}` +
+            `&requestId=${requestId}` +
+            `&requestType=captureWallet`;
 
-        // REF -> ID in merchant. Not duplicate in day
-        const orderId = Date.now();
+        const signed = this.cryptoUtils.encryptSignMomo(signature, MomoConstants.SecretKey);
 
-        // Optional
-        const bankCode = '';
-
-        const locale = 'vn';
-        const currCode = 'VND';
-
-        let vnp_Params: Record<string, any> = {};
-        vnp_Params['vnp_Version'] = '2.1.0';
-        vnp_Params['vnp_Command'] = 'pay';
-        vnp_Params['vnp_TmnCode'] = terminalId;
-        vnp_Params['vnp_Locale'] = locale;
-        vnp_Params['vnp_CurrCode'] = currCode;
-        vnp_Params['vnp_TxnRef'] = orderId;
-        vnp_Params['vnp_OrderInfo'] = 'VNPAY-DH:' + createPaymentDto.id;
-        vnp_Params['vnp_OrderType'] = 'other';
-        vnp_Params['vnp_Amount'] = createPaymentDto.totalAmount * 100;
-        vnp_Params['vnp_ReturnUrl'] = returnUrl;
-        vnp_Params['vnp_IpAddr'] = '127.0.0.1';
-        vnp_Params['vnp_CreateDate'] = this.paymentUtils.formatDate('YYYYMMDDHHmmss');
-        vnp_Params = this.paymentUtils.sortObject(vnp_Params);
-
-        const signature = QueryString.stringify(vnp_Params, { encode: false });
-        const signed = this.cryptoUtils.encryptSignVnpay(signature, secretKey);
-        vnp_Params['vnp_SecureHash'] = signed;
-
-        const redirectUrl = vnpUrl + '?' + QueryString.stringify(vnp_Params, { encode: false });
-        console.log(redirectUrl);
-    }
-
-    async callMomo(createPaymentDto: CreatePaymentDto) {
-        const enpoint = MomoConstants.momoEnpoint;
-        const accessKey = MomoConstants.momoAccessKey;
-        const partnerCode = MomoConstants.momoPartnerCode;
-        const secretKey = MomoConstants.momoSecretKey;
-
-        const returnUrl = MomoConstants.momoReturnUrl;
-        const ipnUrl = MomoConstants.momoIpnUrl;
-
-        const orderId = createPaymentDto.id;
-
-        let momo_Params: any = {};
-        momo_Params['partnerCode'] = partnerCode;
-        momo_Params['orderId'] = orderId;
-
-        // Idempotency: store REF: order - payment: transaction
-        const requestId = Date.now();
-        momo_Params['requestId'] = requestId;
-        momo_Params['amount'] = createPaymentDto.totalAmount;
-        momo_Params['orderInfo'] = 'MOMO-DH:' + createPaymentDto.id;
-        momo_Params['redirectUrl'] = returnUrl;
-        momo_Params['ipnUrl'] = ipnUrl;
-        momo_Params['requestType'] = 'captureWallet';
-        momo_Params['extraData'] = '';
-
-        const hashData: Record<string, any> = {
-            accessKey: accessKey,
-            amount: createPaymentDto.totalAmount,
-            extraData: '',
-            ipnUrl: ipnUrl,
-            orderId: orderId,
-            orderInfo: 'MOMO-DH:' + createPaymentDto.id,
-            partnerCode: partnerCode,
-            redirectUrl: returnUrl,
+        const params: any = {
+            partnerCode: MomoConstants.PartnerCode,
+            requestType: "captureWallet",
+            ipnUrl: MomoConstants.IpnUrl,
+            redirectUrl: MomoConstants.RedirectUrl,
+            orderId: require.orderId,
+            amount: require.total,
+            orderInfo: require.orderInfo,
             requestId: requestId,
-            requestType: 'captureWallet',
-        };
-        const signature = QueryString.stringify(hashData, { encode: false });
-        const signed = this.cryptoUtils.encryptSignMomo(signature, secretKey);
-        momo_Params['signature'] = signed;
-
-        console.log(QueryString.stringify(momo_Params, { encode: false }));
-        try {
-            const response = await axios.post(`${enpoint}/create`, momo_Params);
-            console.log(response.data);
-        } catch (error: any) {
-            console.log('Error: ', error);
+            extraData: extraData,
+            signature: signed,
+            lang: require.lang
         }
+
+        if (optional?.items) {
+            params.items = optional.items;
+        }
+        if (optional?.deliveryInfo) {
+            params.deliveryInfo = optional.deliveryInfo;
+        }
+        if (optional?.userInfo) {
+            params.userInfo = optional.userInfo;
+        }
+
+
+        const API_URL = MomoConstants.Enpoint + "/" + "create";
+        try {
+            const response = await axios.post<MomoCreateRep>(API_URL, params);
+
+            console.log(response.data);
+            if (response.data) {
+                if (response.data.resultCode === 0) {
+                    return {
+                        requestId: requestId,
+                        orderId: require.orderId,
+                        createDate: null,
+                        expireDate: null,
+                        provider: "Momo",
+                        transaction: {
+                            account: {
+                                id: require.extraData.id,
+                                email: require.extraData.email
+                            },
+                            quantity: 0,
+                            total: require.total
+                        },
+                        payment: {
+                            paymentUrl: response.data.payUrl ?? ""
+                        }
+                    }
+                }
+                throw new BadRequestException(response.data.message);
+            } else {
+                throw new BadRequestException("Lỗi ở phía máy chủ, vui lòng thử lại sau");
+            }
+        } catch (error: any) {
+            console.log("hehee");
+            if (error instanceof AxiosError) {
+                console.log(error.response?.data.message)
+                if (error.response) {
+                    throw new BadRequestException(error.response.data.message);
+
+                }
+            }
+            console.log("Error in Momo gateway: ", error);
+            throw new BadRequestException("Lỗi không xác định, vui lòng thử lại sau");
+        }
+    }
+
+    async paymentMomoQuery() {
+
+    }
+
+    async paymentMomoConfirm() {
+
+    }
+
+    async paymentMomoRefund() {
+
+    }
+
+    /** */
+    async paymentSeapayCreate() {
+
     }
 }

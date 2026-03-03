@@ -1,4 +1,3 @@
-
 type ProductStatus = "Active" | "UnActive" | "Other";
 type ProductUnit = "Gram" | "Kilogram" | "Other";
 
@@ -35,7 +34,11 @@ type PropertyRep = {
 };
 
 type CreateProductForm = {
+<<<<<<< HEAD
   readonly currentStock: 0;
+=======
+  currentStock: number;
+>>>>>>> 8822616 (dã hoàn thành apply api cho product,category và image, cũng cập nhật backend của phần account để có thể mở lại tài khoản nhưng các mục khác thì không thể mở lại được)
   status: ProductStatus;
   categoryId: string;
   price: number;
@@ -54,6 +57,10 @@ type CreateProductForm = {
 };
 
 type UpdateProductForm = {
+<<<<<<< HEAD
+=======
+  currentStock?: number;
+>>>>>>> 8822616 (dã hoàn thành apply api cho product,category và image, cũng cập nhật backend của phần account để có thể mở lại tài khoản nhưng các mục khác thì không thể mở lại được)
   status?: ProductStatus;
   categoryId: string;
   price: number;
@@ -78,4 +85,8 @@ export type {
   UpdateProductForm,
   ProductStatus,
   ProductUnit,
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> 8822616 (dã hoàn thành apply api cho product,category và image, cũng cập nhật backend của phần account để có thể mở lại tài khoản nhưng các mục khác thì không thể mở lại được)

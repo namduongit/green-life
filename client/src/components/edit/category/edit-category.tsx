@@ -1,4 +1,3 @@
-
 import type { CategoryRep } from "../../../services/category";
 import { useState, useEffect } from "react";
 import { updateCategory } from "../../../services/category/category";

@@ -81,9 +81,9 @@ export class AccountsService {
         };
     }
 
-    async deleteUser(id: string): Promise<AccountRep> {
+    async deActivate(id: string): Promise<AccountRep> {
         // soft delete implementation
-        const deletedUser = await this.prismaService.prismaClient.accounts.update({
+        const deActivatedUser = await this.prismaService.prismaClient.accounts.update({
             where: { id: id },
             data: {
                 isLock: true,
@@ -91,12 +91,29 @@ export class AccountsService {
         });
 
         return {
-            id: deletedUser.id,
-            createdAt: deletedUser.createdAt,
-            updatedAt: deletedUser.updatedAt,
-            email: deletedUser.email,
-            role: deletedUser.role,
-            isLock: deletedUser.isLock,
+            id: deActivatedUser.id,
+            createdAt: deActivatedUser.createdAt,
+            updatedAt: deActivatedUser.updatedAt,
+            email: deActivatedUser.email,
+            role: deActivatedUser.role,
+            isLock: deActivatedUser.isLock,
         };
+    }
+    async activate(id: string): Promise<AccountRep> {
+        const activatedUser = await this.prismaService.prismaClient.accounts.update({
+            where: {id : id},
+            data: {
+                isLock: false,
+            },
+        });
+        return {
+            id: activatedUser.id,
+            createdAt: activatedUser.createdAt,
+            updatedAt: activatedUser.updatedAt,
+            email: activatedUser.email,
+            role: activatedUser.role,
+            isLock: activatedUser.isLock,
+            
+        }
     }
 }

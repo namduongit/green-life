@@ -21,8 +21,13 @@ export const updateAccount = async (id: string, updateAccountForm: UpdateAccount
     return response;
 }
 
-export const deleteAccount = async (id: string) => {
+export const deActivateAccount = async (id: string) => {
     const response = await api.delete(`/api/users/${id}`);
+    return response;
+}
+
+export const activateAccount = async (id: string) => {
+    const response = await api.patch(`/api/users/${id}/activate`);
     return response;
 }
 
@@ -62,6 +67,6 @@ export const removeFromCart = async (userId: string, productId: string) => {
 }
 
 export const clearCart = async (userId: string) => {
-    const response = await api.delete(`/api/    users/${userId}/cart`);
+    const response = await api.delete(`/api/users/${userId}/cart`);
     return response.data;
 }

@@ -32,7 +32,9 @@ const AdminAccount = () => {
     const [totalAccounts, setTotalAccounts] = useState<number>(0);
     const [lockedAccounts, setLockedAccounts] = useState<number>(0);
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
-    const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<AccountRep | null>(null);
+    const [selectedAccountIdForDeActivation, setSelectedAccountIdForDeActivation] = useState<string | null>(null);
+    const [selectedAccountIdForActivation, setSelectedAccountIdForActivation] = useState<string | null>(null);
+
     const { query } = useExecute();
     const { showToast, showErrorResponse } = useToastContext();
     const { waitConfirm } = useModalConfirmContext();
@@ -63,8 +65,7 @@ const AdminAccount = () => {
                 account.id.toLowerCase().includes(searchInput.toLowerCase());
 
             const matchRole =
-                roleFilter === "" ||
-                account.role?.toLowerCase() === roleFilter.toLowerCase();
+                roleFilter === "" || account.role === roleFilter;
 
             return matchSearch && matchRole;
         });
@@ -74,11 +75,7 @@ const AdminAccount = () => {
     }, [searchInput, roleFilter, accounts]);
 
     const handleDeactivateAccount = async (id: string) => {
-        const confirm = await waitConfirm();
-        if (!confirm) return;
-        const result = await query(
-            deActivateAccount(id)
-        );
+        setSelectedAccountIdForDeActivation(id);
 
         if (result?.errors) {
             showErrorResponse(result.errors);
@@ -109,6 +106,53 @@ const AdminAccount = () => {
         }
     }
 
+    const confirmDeactivateAccount = async () => {
+        if (!selectedAccountIdForDeActivation) return;
+
+        const result = await query(
+            deActivateAccount(selectedAccountIdForDeActivation)
+        );
+
+        if (result?.errors) {
+            showErrorResponse(result.errors);
+        } else {
+            showToast("Success", "Đã khóa tài khoản");
+            setAccounts(prev => prev.map(
+                acc => acc.id === selectedAccountIdForDeActivation ? { ...acc, isLock: true } : acc
+            )
+            );
+            // Nếu đúng:
+            // "{ ...acc, isLock: true }"=> tạo account mới + sửa isLock.
+            // Nếu sai thì:
+            // "acc" => giữ nguyên.
+
+            setLockedAccounts(prev => prev + 1);
+        }
+
+        setSelectedAccountIdForDeActivation(null);
+    };
+
+    const handleActivateAccount = async (id: string) => {
+        setSelectedAccountIdForActivation(id);
+    };
+
+    const confirmActivateAccount = async () => {
+        if (!selectedAccountIdForActivation) return;
+        const result = await query(
+            activateAccount(selectedAccountIdForActivation)
+        );
+        if (result?.errors) {
+            showErrorResponse(result.errors);
+        } else {
+            showToast("Success", "Đã mở khóa tài khoản");
+            setAccounts(prev => prev.map(acc =>
+                acc.id === selectedAccountIdForActivation ? { ...acc, isLock: false } : acc
+            ));
+            setLockedAccounts(prev => prev - 1);
+        }
+        setSelectedAccountIdForActivation(null);
+    };
+
     const handleAccountAdded = (newAccount: AccountRep) => {
         setAccounts([...accounts, newAccount]);
         setTotalAccounts(totalAccounts + 1);
@@ -126,7 +170,7 @@ const AdminAccount = () => {
         {
             reactNode: (
                 <div
-                    className="max-w-45 truncate"
+                    className="max-w-[180px] truncate"
                     title={account.id}
                 >
                     {account.id}
@@ -137,7 +181,7 @@ const AdminAccount = () => {
         {
             reactNode: (
                 <div
-                    className="max-w-50 truncate"
+                    className="max-w-[200px] truncate"
                     title={account.email}
                 >
                     {account.email}
@@ -155,20 +199,8 @@ const AdminAccount = () => {
         },
         {
             reactNode: (
-                <div
-                    onClick={() =>
-                        account.isLock
-                            ? handleActivateAccount(account.id)
-                            : handleDeactivateAccount(account.id)
-                    }
-                    className="cursor-pointer"
-                >
-                    <span
-                        className={`px-2 py-1 rounded ${!account.isLock
-                                ? "text-green-600 bg-green-100"
-                                : "text-red-600 bg-red-100"
-                            }`}
-                    >
+                <div onClick={() => handleDeactivateAccount(account.id)}>
+                    <span className={`px-2 py-1 rounded ${!account.isLock ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"}`}>
                         {!account.isLock ? "Hoạt động" : "Khóa"}
                     </span>
                 </div>
@@ -178,13 +210,11 @@ const AdminAccount = () => {
         {
             reactNode: (
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setSelectedAccountForEdit(account)}
-                        className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50">Sửa</button>
+                    <button className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50">Sửa</button>
                     {account.isLock ? (
                         <button
                             onClick={() => handleActivateAccount(account.id)}
-                            className="px-2 py-1 text-xs rounded border border-green-300 text-green-600 hover:bg-green-50"
+                            className="px-2 py-1 text-xs rounded ring-1 ring-green-300 text-green-600 hover:bg-green-50"
                         >
                             Mở khóa
                         </button>
@@ -325,20 +355,64 @@ const AdminAccount = () => {
                     onClose={() => setShowAddModal(false)}
                 />
             )}
+            {selectedAccountIdForDeActivation && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+                    <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+                        <h2 className="text-lg font-semibold mb-3">
+                            Xác nhận khóa tài khoản
+                        </h2>
 
-            {selectedAccountForEdit && (
-                <EditAccount
-                    account={selectedAccountForEdit}
-                    onClose={() => setSelectedAccountForEdit(null)}
-                    onUpdated={(updated) => {
-                        setAccounts(prev =>
-                            prev.map(acc =>
-                                acc.id === updated.id ? updated : acc
-                            )
-                        );
-                        setSelectedAccountForEdit(null);
-                    }}
-                />
+                        <p className="text-gray-600 mb-6">
+                            Bạn có chắc muốn khóa tài khoản này?
+                        </p>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setSelectedAccountIdForDeActivation(null)}
+                                className="px-4 py-2 rounded ring-1 ring-gray-300 hover:bg-gray-50"
+                            >
+                                Hủy
+                            </button>
+
+                            <button
+                                onClick={confirmDeactivateAccount}
+                                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+                            >
+                                Xác nhận
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {selectedAccountIdForActivation && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+                    <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+                        <h2 className="text-lg font-semibold mb-3">
+                            Xác nhận mở tài khoản
+                        </h2>
+
+                        <p className="text-gray-600 mb-6">
+                            Bạn có chắc muốn mở tài khoản này?
+                        </p>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setSelectedAccountIdForActivation(null)}
+                                className="px-4 py-2 rounded ring-1 ring-gray-300 hover:bg-gray-50"
+                            >
+                                Hủy
+                            </button>
+
+                            <button
+                                onClick={confirmActivateAccount}
+                                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-red-700"
+                            >
+                                Xác nhận
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )

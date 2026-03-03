@@ -10,9 +10,9 @@ export class CategoriesService {
 
     async getCategories() {
         const result = await this.prismaService.prismaClient.categories.findMany({
-            where: {
-                isDelete: false,
-            },
+            // where: {
+            //     isDelete: false,
+            // },
             orderBy: {
                 createdAt: 'desc',
             },

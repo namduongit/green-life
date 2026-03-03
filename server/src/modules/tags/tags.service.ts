@@ -9,9 +9,9 @@ export class TagsService {
 
     async getTags() {
         const result = await this.prismaService.prismaClient.tags.findMany({
-            where: {
-                isDelete: false,
-            },
+            // where: {
+            //     isDelete: false,
+            // },
             orderBy: {
                 createdAt: 'desc',
             },

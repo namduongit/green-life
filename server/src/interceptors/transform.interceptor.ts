@@ -11,7 +11,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, RestResponse<
       map(data => ({
         statusCode: context.switchToHttp().getResponse().statusCode,
         message: 'Success', // Or a more dynamic message
-        data: data,
+        data: data ?? null,
         error: null,
       })),
     );

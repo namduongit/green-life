@@ -3,7 +3,7 @@ import { createHash, createHmac } from 'crypto';
 
 @Injectable()
 export class CryptoUtils {
-    public encryptSignVnpay(signature: string, secretKey: string) {
+    public encryptSignVNPay(signature: string, secretKey: string): string {
         const hmac = createHmac('sha512', secretKey);
         const signed = hmac.update(new Buffer(signature, 'utf-8')).digest('hex');
         return signed;

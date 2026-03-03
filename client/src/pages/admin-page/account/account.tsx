@@ -170,8 +170,20 @@ const AdminAccount = () => {
         },
         {
             reactNode: (
-                <div onClick={() => handleDeactivateAccount(account.id)}>
-                    <span className={`px-2 py-1 rounded ${!account.isLock ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"}`}>
+                <div
+                    onClick={() =>
+                        account.isLock
+                            ? handleActivateAccount(account.id)
+                            : handleDeactivateAccount(account.id)
+                    }
+                    className="cursor-pointer"
+                >
+                    <span
+                        className={`px-2 py-1 rounded ${!account.isLock
+                                ? "text-green-600 bg-green-100"
+                                : "text-red-600 bg-red-100"
+                            }`}
+                    >
                         {!account.isLock ? "Hoạt động" : "Khóa"}
                     </span>
                 </div>
@@ -379,7 +391,7 @@ const AdminAccount = () => {
 
                             <button
                                 onClick={confirmActivateAccount}
-                                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-red-700"
+                                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
                             >
                                 Xác nhận
                             </button>

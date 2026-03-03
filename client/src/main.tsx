@@ -12,8 +12,11 @@ import AdminDashboard from './pages/admin-page/dashboard/dashboard'
 import AdminLayout from './pages/admin-page/layout'
 import AdminAccount from './pages/admin-page/account/account'
 import AdminProduct from './pages/admin-page/product/product'
+<<<<<<< HEAD
 import AdminTag from './pages/admin-page/tag/tag'
 import AdminCategory from './pages/admin-page/category/category'
+=======
+>>>>>>> fce85e3 (test)
 import { AuthProvider } from './contexts/auth/auth'
 import ProductPage from './pages/product/product'
 
@@ -43,8 +46,11 @@ createRoot(document.getElementById('root')!).render(
               <Route path='/admin/dashboard' element={<AdminDashboard />} />
               <Route path='/admin/accounts' element={<AdminAccount />} />
               <Route path='/admin/products' element={<AdminProduct />} />
+<<<<<<< HEAD
               <Route path='/admin/category' element={<AdminCategory />} />
               <Route path='/admin/tag' element={<AdminTag />} />
+=======
+>>>>>>> fce85e3 (test)
             </Route>
 
           </Routes>

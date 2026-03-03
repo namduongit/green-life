@@ -10,7 +10,10 @@ import { useExecute } from "../../../hooks/execute";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
 import AddAccount from "../../../components/add/account/add-account";
 import EditAccount from "../../../components/edit/account/edit-account";
+<<<<<<< HEAD
 import { useModalConfirmContext } from "../../../contexts/modal-confirm/modal-confirm";
+=======
+>>>>>>> 3aa090d (fix lại cái role filter, thêm component edit account, thêm chức năng sửa và modal cho chức năng sửa)
 
 const AdminAccount = () => {
     const [searchInput, setSearchInput] = useState<string>("");
@@ -34,7 +37,7 @@ const AdminAccount = () => {
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
     const [selectedAccountIdForDeActivation, setSelectedAccountIdForDeActivation] = useState<string | null>(null);
     const [selectedAccountIdForActivation, setSelectedAccountIdForActivation] = useState<string | null>(null);
-
+    const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<AccountRep | null>(null);
     const { query } = useExecute();
     const { showToast, showErrorResponse } = useToastContext();
     const { waitConfirm } = useModalConfirmContext();
@@ -65,7 +68,8 @@ const AdminAccount = () => {
                 account.id.toLowerCase().includes(searchInput.toLowerCase());
 
             const matchRole =
-                roleFilter === "" || account.role === roleFilter;
+                roleFilter === "" ||
+                account.role?.toLowerCase() === roleFilter.toLowerCase();
 
             return matchSearch && matchRole;
         });
@@ -210,7 +214,9 @@ const AdminAccount = () => {
         {
             reactNode: (
                 <div className="flex items-center gap-2">
-                    <button className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50">Sửa</button>
+                    <button
+                        onClick={() => setSelectedAccountForEdit(account)}
+                        className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50">Sửa</button>
                     {account.isLock ? (
                         <button
                             onClick={() => handleActivateAccount(account.id)}
@@ -413,6 +419,20 @@ const AdminAccount = () => {
                         </div>
                     </div>
                 </div>
+            )}
+            {selectedAccountForEdit && (
+                <EditAccount
+                    account={selectedAccountForEdit}
+                    onClose={() => setSelectedAccountForEdit(null)}
+                    onUpdated={(updated) => {
+                        setAccounts(prev =>
+                            prev.map(acc =>
+                                acc.id === updated.id ? updated : acc
+                            )
+                        );
+                        setSelectedAccountForEdit(null);
+                    }}
+                />
             )}
         </div>
     )

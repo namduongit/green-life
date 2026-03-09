@@ -190,6 +190,12 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
         } else if (res?.data) {
             showToast("Success", "Tạo sản phẩm thành công!");
             onProductAdded?.(res.data as ProductRep);
+<<<<<<< HEAD
+=======
+            setTimeout(() => {
+                onClose?.();
+            }, 500);
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
         }
     };
 

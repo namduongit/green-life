@@ -34,7 +34,7 @@ type PropertyRep = {
 };
 
 type CreateProductForm = {
-  currentStock: number;
+  readonly currentStock: 0;
   status: ProductStatus;
   categoryId: string;
   price: number;
@@ -53,7 +53,6 @@ type CreateProductForm = {
 };
 
 type UpdateProductForm = {
-  currentStock?: number;
   status?: ProductStatus;
   categoryId: string;
   price: number;

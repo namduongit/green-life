@@ -2,6 +2,8 @@ import type { TagRep } from "../../../services/tag/tag.type";
 import { useState, useEffect } from "react";
 import { updateTag } from "../../../services/tag/tag";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
+import { useExecute } from "../../../hooks/execute";
+
 
 type Props = {
   tag: TagRep;
@@ -11,6 +13,7 @@ type Props = {
 
 const EditTag = ({ tag, onClose, onUpdated }: Props) => {
   const { showToast, showErrorResponse } = useToastContext();
+  const { query, loading } = useExecute();
 
   const [name, setName] = useState(tag.name);
   const [status, setStatus] = useState(tag.status);
@@ -35,7 +38,7 @@ const EditTag = ({ tag, onClose, onUpdated }: Props) => {
       status,
     };
 
-    const result = await updateTag(tag.id, payload);
+    const result = await query<TagRep>(updateTag(tag.id, payload));
 
     if (result?.data) {
       onUpdated({

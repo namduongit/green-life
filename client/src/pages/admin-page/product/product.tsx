@@ -7,6 +7,7 @@ import type { TableBody, TableHeader } from "../../../components/table/table";
 import {
     getAllProducts,
     deleteProduct,
+    reActivateProduct,
 } from "../../../services/product/product";
 
 import type { ProductRep } from "../../../services/product/product.type";
@@ -29,8 +30,6 @@ const AdminProduct = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedProductForEdit, setSelectedProductForEdit] =
         useState<ProductRep | null>(null);
-    const [selectedProductIdForDelete, setSelectedProductIdForDelete] =
-        useState<string | null>(null);
 
     const [totalProducts, setTotalProducts] = useState(0);
     const [deletedProducts, setDeletedProducts] = useState(0);
@@ -38,13 +37,15 @@ const AdminProduct = () => {
     const { waitConfirm } = useModalConfirmContext();
     const { query } = useExecute();
 
+
+
     // FETCH
     const fetchProducts = async () => {
         setLoading(true);
-        const result = await query<ProductRep[]>(getAllProducts());
+        const result = await query(getAllProducts());
         if (result?.errors) {
             showErrorResponse(result.errors);
-        } else if (result?.data) {
+        } else if (result && !result.errors) {
             console.log("Fetched products:", result.data);
             const data: ProductRep[] = Array.isArray(result.data)
                 ? result.data
@@ -81,22 +82,22 @@ const AdminProduct = () => {
     }, [searchInput, products]);
 
     // DELETE
-    const confirmDelete = async () => {
-        if (!selectedProductIdForDelete) return;
+    const handleDeleteProduct = async (id: string) => {
+        if (!id) return;
 
         const confirm = await waitConfirm();
         if (!confirm) return;
 
-        const result = await query(deleteProduct(selectedProductIdForDelete));
+        const result = await query<ProductRep>(deleteProduct(id));
 
         if (result?.errors) {
             showErrorResponse(result.errors);
-        } else if (result?.data) {
+        } else if (result && !result.errors) {
             showToast("Success", "Đã xóa sản phẩm");
 
             setProducts(prev =>
                 prev.map(p =>
-                    p.id === selectedProductIdForDelete
+                    p.id === id
                         ? { ...p, isDelete: true }
                         : p
                 )
@@ -104,7 +105,7 @@ const AdminProduct = () => {
 
             setFilteredProducts(prev =>
                 prev.map(p =>
-                    p.id === selectedProductIdForDelete
+                    p.id === id
                         ? { ...p, isDelete: true }
                         : p
                 )
@@ -112,9 +113,42 @@ const AdminProduct = () => {
 
             setDeletedProducts(prev => prev + 1);
         }
-
-        setSelectedProductIdForDelete(null);
     };
+
+const handleReActivateProduct = async (id: string) => {
+        if (!id) return;
+
+        const confirm = await waitConfirm();
+        if (!confirm) return;
+
+        const result = await query<ProductRep>(reActivateProduct(id));
+
+        if (result?.errors) {
+            showErrorResponse(result.errors);
+        } else if (result && !result.errors) {
+            showToast("Success", "Đã mở khoá sản phẩm");
+
+            setProducts(prev =>
+                prev.map(p =>
+                    p.id === id
+                        ? { ...p, isDelete: false }
+                        : p
+                )
+            );
+
+            setFilteredProducts(prev =>
+                prev.map(p =>
+                    p.id === id
+                        ? { ...p, isDelete: false }
+                        : p
+                )
+            );
+
+            setDeletedProducts(prev => prev - 1);
+        }
+    };
+
+
 
     // PAGINATION
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -129,7 +163,6 @@ const AdminProduct = () => {
         "Image",
         "Name",
         "Category",
-        "Stock",
         "Price",
         "Size",
         "Unit",
@@ -183,7 +216,6 @@ const AdminProduct = () => {
             )
         },
 
-        String(product.currentStock ?? 0),
 
         product.property?.price !== undefined
             ? product.property.price.toLocaleString("vi-VN") + " đ"
@@ -196,45 +228,58 @@ const AdminProduct = () => {
         product.property?.unit ?? "N/A",
 
         {
-            reactNode: (
-                <span
-                    className={`px-2 py-1 rounded ${product.isDelete
-                        ? "text-gray-600 bg-gray-100"
-                        : product.status === "Active"
-                            ? "text-green-600 bg-green-100"
-                            : "text-yellow-600 bg-yellow-100"
-                        }`}
-                >
-                    {product.isDelete ? "Đã xóa" : product.status}
-                </span>
-            )
-        },
+    reactNode: (
+        <div
+            onClick={() =>
+                product.isDelete
+                    ? handleReActivateProduct(product.id)
+                    : handleDeleteProduct(product.id)
+            }
+            className="cursor-pointer"
+        >
+            <span
+                className={`px-2 py-1 rounded ${
+                    product.isDelete
+                        ? "text-red-600 bg-red-100"
+                        : "text-green-600 bg-green-100"
+                }`}
+            >
+                {product.isDelete ? "Đã xóa" : "Hoạt động"}
+            </span>
+        </div>
+    )
+},
 
         {
-            reactNode: (
-                <div className="flex gap-2">
-                    {!product.isDelete && (
-                        <>
-                            <button
-                                onClick={() => setSelectedProductForEdit(product)}
-                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                            >
-                                Sửa
-                            </button>
+    reactNode: (
+        <div className="flex gap-2">
+            {!product.isDelete && (
+                <button
+                    onClick={() => setSelectedProductForEdit(product)}
+                    className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                >
+                    Sửa
+                </button>
+            )}
 
-                            <button
-                                onClick={() =>
-                                    setSelectedProductIdForDelete(product.id)
-                                }
-                                className="px-2 py-1 text-xs rounded border ring-red-300 text-red-600 hover:bg-red-50"
-                            >
-                                Xóa
-                            </button>
-                        </>
-                    )}
-                </div>
-            ),
-        },
+            {product.isDelete ? (
+                <button
+                    onClick={() => handleReActivateProduct(product.id)}
+                    className="px-2 py-1 text-xs rounded border border-green-300 text-green-600 hover:bg-green-50"
+                >
+                    Khôi phục
+                </button>
+            ) : (
+                <button
+                    onClick={() => handleDeleteProduct(product.id)}
+                    className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600 hover:bg-red-50"
+                >
+                    Xóa
+                </button>
+            )}
+        </div>
+    ),
+},
     ]);
 
     return (

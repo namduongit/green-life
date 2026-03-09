@@ -7,6 +7,7 @@ import type { TableBody, TableHeader } from "../../../components/table/table";
 import {
   getAllTags,
   softDeleteTag,
+  reActivateTag
 } from "../../../services/tag/tag";
 
 import type { TagRep } from "../../../services/tag/tag.type";
@@ -34,6 +35,8 @@ const AdminTag = () => {
     useState<string | null>(null);
   const [selectedTagForEdit, setSelectedTagForEdit] =
     useState<TagRep | null>(null);
+  const [selectedTagIdForRestore, setSelectedTagIdForRestore] =
+    useState<string | null>(null);
 
   const { query } = useExecute();
   const { showToast, showErrorResponse } = useToastContext();
@@ -115,6 +118,50 @@ const AdminTag = () => {
 
     setSelectedTagIdForDelete(null);
   };
+  //Restore
+  const handleReActivateTag = async (id: string) => {
+    const result = await query(reActivateTag(id));
+
+    if (!result) {
+      showToast("Error", "Không nhận được phản hồi từ server");
+      return;
+    }
+
+    if (result.errors) {
+      showErrorResponse(result.errors);
+      return;
+    }
+
+    if (result.data) {
+      showToast("Success", "Đã khôi phục tag");
+
+      setTags(prev =>
+        prev.map(tag =>
+          tag.id === id
+            ? { ...tag, isDelete: false }
+            : tag
+        )
+      );
+
+      setFilteredTags(prev =>
+        prev.map(tag =>
+          tag.id === id
+            ? { ...tag, isDelete: false }
+            : tag
+        )
+      );
+
+      setDeletedTags(prev => prev - 1);
+    }
+  };
+
+  const confirmRestore = async () => {
+    if (!selectedTagIdForRestore) return;
+
+    await handleReActivateTag(selectedTagIdForRestore);
+
+    setSelectedTagIdForRestore(null);
+  };
 
   // ADD
   const handleTagAdded = (newTag: TagRep) => {
@@ -156,11 +203,10 @@ const AdminTag = () => {
             !tag.isDelete &&
             setSelectedTagIdForDelete(tag.id)
           }
-          className={`px-2 py-1 rounded cursor-pointer ${
-            tag.isDelete
+          className={`px-2 py-1 rounded cursor-pointer ${tag.isDelete
               ? "text-red-600 bg-red-100"
               : "text-green-600 bg-green-100"
-          }`}
+            }`}
         >
           {tag.isDelete ? "Đã xóa" : "Hoạt động"}
         </span>
@@ -179,14 +225,19 @@ const AdminTag = () => {
             </button>
           )}
 
-          {!tag.isDelete && (
+          {!tag.isDelete ? (
             <button
-              onClick={() =>
-                setSelectedTagIdForDelete(tag.id)
-              }
+              onClick={() => setSelectedTagIdForDelete(tag.id)}
               className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600 hover:bg-red-50"
             >
               Xóa
+            </button>
+          ) : (
+            <button
+              onClick={() => setSelectedTagIdForRestore(tag.id)}
+              className="px-2 py-1 text-xs rounded ring-1 ring-green-300 text-green-600 hover:bg-green-50"
+            >
+              Khôi phục
             </button>
           )}
         </div>
@@ -338,6 +389,36 @@ const AdminTag = () => {
               <button
                 onClick={confirmDelete}
                 className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTagIdForRestore && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+            <h2 className="text-lg font-semibold mb-3">
+              Xác nhận khôi phục tag
+            </h2>
+
+            <p className="text-gray-600 mb-6">
+              Bạn có chắc muốn khôi phục tag này?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedTagIdForRestore(null)}
+                className="px-4 py-2 rounded ring-1 ring-gray-300 hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+
+              <button
+                onClick={confirmRestore}
+                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
               >
                 Xác nhận
               </button>

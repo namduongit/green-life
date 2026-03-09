@@ -183,4 +183,29 @@ export class CategoriesService {
 
         return deletedCategory;
     }
+
+    async reActivate(id: string) {
+        const category = await this.prismaService.prismaClient.categories.findUnique({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('Không tìm thấy danh mục');
+        }
+
+        if (!category.isDelete) {
+            throw new BadRequestException('Danh mục này đang được kích hoạt');
+        }
+
+        const reActivatedCategory = await this.prismaService.prismaClient.categories.update({
+            where: { id },
+            data: {
+                isDelete: false,
+            },
+        });
+
+        return reActivatedCategory;
+    }
+
+
 }

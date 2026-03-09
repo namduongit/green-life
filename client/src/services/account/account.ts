@@ -1,33 +1,33 @@
 import { api } from "../../api/api"
-import type { AddressForm, AddressRep, AddToCartForm, CartRep, CreateAccountForm, UpdateAccountForm } from "./account.type";
+import type {AccountRep, AddressForm, AddressRep, AddToCartForm, CartRep, CreateAccountForm, UpdateAccountForm } from "./account.type";
 
 export const getAllAccounts = async () => {
-    const response = await api.get("/api/users");
+    const response = await api.get<AccountRep[]>("/api/users");
     return response;
 }
 
 export const getAccountById = async (id: string) => {
-    const response = await api.get(`/api/users/${id}`);
+    const response = await api.get<AccountRep[]>(`/api/users/${id}`);
     return response;
 }
 
 export const createAccount = async (createAccountForm: CreateAccountForm) => {
-    const response = await api.post("/api/users", createAccountForm);
+    const response = await api.post<AccountRep>("/api/users", createAccountForm);
     return response;
 }
 
 export const updateAccount = async (id: string, updateAccountForm: UpdateAccountForm) => {
-    const response = await api.put(`/api/users/${id}`, updateAccountForm);
+    const response = await api.put<AccountRep>(`/api/users/${id}`, updateAccountForm);
     return response;
 }
 
 export const deActivateAccount = async (id: string) => {
-    const response = await api.delete(`/api/users/${id}`);
+    const response = await api.delete<AccountRep>(`/api/users/${id}`);
     return response;
 }
 
 export const activateAccount = async (id: string) => {
-    const response = await api.patch(`/api/users/${id}/activate`);
+    const response = await api.patch<AccountRep>(`/api/users/${id}/activate`);
     return response;
 }
 

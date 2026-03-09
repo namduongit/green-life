@@ -3,7 +3,6 @@ import {
     updateProperty,
     updateCategory,
     updateTags,
-    changeStock,
     updateStatus
 } from "../../../services/product/product";
 import { getAllCategories } from "../../../services/category/category";
@@ -12,6 +11,8 @@ import type { ProductRep, ProductStatus } from "../../../services/product/produc
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
 import { useExecute } from "../../../hooks/execute";
 import ButtonForm from "../../button/button-form/button-form";
+import type { CategoryRep } from "../../../services/category/category.type";
+import type { TagRep } from "../../../services/tag/tag.type";
 
 interface Props {
     product: ProductRep;
@@ -34,7 +35,6 @@ type FormState = {
     description: string;
     categoryId: string;
     price: string;
-    currentStock: string;
     urlImage: string;
     weight: string;
     unit: string;
@@ -63,7 +63,6 @@ const EditProduct = ({ product, onUpdated, onClose }: Props) => {
         description: product.property?.description || "",
         categoryId: product.categoryId || "",
         price: String(product.property?.price ?? ""),
-        currentStock: String(product.currentStock ?? ""),
         urlImage: product.property?.urlImage || "",
         weight: String(product.property?.weight ?? ""),
         unit: product.property?.unit || "",
@@ -80,25 +79,39 @@ const EditProduct = ({ product, onUpdated, onClose }: Props) => {
 
     useEffect(() => {
         const fetchData = async () => {
-            try {
-                const cateRes = await getAllCategories();
-                const tagRes = await getAllTags();
+                const cateRes = await query<CategoryRep[]>(getAllCategories())
+                const tagRes = await query<TagRep[]>(getAllTags());
 
-                const cateData = Array.isArray(cateRes.data)
-                    ? cateRes.data
-                    : cateRes.data?.data ?? [];
+                
+                if (cateRes?.errors) {
+                    showErrorResponse(cateRes.errors);
+                    setCategories([]);
+                }
 
-                const tagData = Array.isArray(tagRes.data)
-                    ? tagRes.data
-                    : tagRes.data?.data ?? [];
 
-                setCategories(cateData);
-                setTags(tagData);
-            } catch (error) {
-                console.error("Load data failed:", error);
-                setCategories([]);
-                setTags([]);
-            }
+                if (cateRes?.data) {
+                    setCategories(cateRes.data);
+                }
+
+                if (tagRes?.errors) {
+                    showErrorResponse(tagRes.errors);
+                    setTags([]);
+                }
+                if (tagRes?.data) {
+                    setTags(tagRes.data);
+                }
+
+                // const cateData = Array.isArray(cateRes.data)
+                //     ? cateRes.data
+                //     : cateRes.data?.data ?? [];
+
+                // const tagData = Array.isArray(tagRes.data)
+                //     ? tagRes.data
+                //     : tagRes.data?.data ?? [];
+
+                // setCategories(cateData);
+                // setTags(tagData);
+            
         };
 
         fetchData();
@@ -136,8 +149,6 @@ const EditProduct = ({ product, onUpdated, onClose }: Props) => {
         if (!form.price || Number(form.price) <= 0)
             newErrors.price = "Giá phải lớn hơn 0";
 
-        if (form.currentStock && Number(form.currentStock) < 0)
-            newErrors.currentStock = "Số lượng không hợp lệ";
 
         if (!form.weight || Number(form.weight) <= 0)
             newErrors.weight = "Trọng lượng phải lớn hơn 0";
@@ -194,12 +205,10 @@ const EditProduct = ({ product, onUpdated, onClose }: Props) => {
             }
 
             await query(updateTags(product.id, form.tags));
-            await query(changeStock(product.id, Number(form.currentStock || 0)));
             await query(updateStatus(product.id, form.status));
 
             onUpdated?.({
                 ...product,
-                currentStock: Number(form.currentStock),
                 status: form.status,
                 categoryId: form.categoryId,
                 tags: form.tags,
@@ -252,7 +261,7 @@ const EditProduct = ({ product, onUpdated, onClose }: Props) => {
                                 )}
                             </div>
 
-                            {/* PRICE & STOCK - ROW */}
+                            {/* PRICE ROW */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="flex flex-col gap-1">
                                     <label htmlFor="price" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
@@ -271,26 +280,6 @@ const EditProduct = ({ product, onUpdated, onClose }: Props) => {
                                     )}
                                 </div>
 
-                                <div className="flex flex-col gap-1">
-                                    <label htmlFor="stock" className="text-blue-700 font-medium">
-                                        Số lượng tồn kho
-                                    </label>
-                                    <input
-                                        id="stock"
-                                        type="number"
-                                        placeholder="VD: 100"
-                                        className={inputClass("currentStock")}
-                                        value={form.currentStock}
-                                        onChange={e =>
-                                            setForm({ ...form, currentStock: e.target.value })
-                                        }
-                                    />
-                                    {errors.currentStock && (
-                                        <p className="text-red-500 text-xs">
-                                            {errors.currentStock}
-                                        </p>
-                                    )}
-                                </div>
                             </div>
 
                             {/* CATEGORY */}

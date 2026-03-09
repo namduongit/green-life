@@ -17,11 +17,12 @@ const LoginPage = () => {
     });
 
     const submitForm = async () => {
-        const result = await query<LoginRep>(login(loginForm));
+        const result = await query(login(loginForm));
         if (result?.errors) {
             showErrorResponse(result.errors)
         } else if (result?.data) {
             showToast("Success", "Đăng nhập thành công");
+            // result.data
             saveStateAuth(result.data);
             setTimeout(() => {
                 window.location.href = "/";

@@ -129,4 +129,12 @@ export class ProductsController {
         const deletedProduct = await this.productsService.deleteProduct(id);
         return deletedProduct;
     }
+
+
+    @Patch('/:id/activate')
+    async ReActivateProduct(@Param('id') id: string) {
+        const reActivatedProduct = await this.productsService.reActivate(id);
+        return reActivatedProduct;
+    }
+
 }

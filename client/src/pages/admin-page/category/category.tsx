@@ -7,6 +7,7 @@ import type { TableBody, TableHeader } from "../../../components/table/table";
 import {
   getAllCategories,
   softDeleteCategory,
+  reActivateCategory
 } from "../../../services/category/category";
 
 import type { CategoryRep } from "../../../services/category/category.type";
@@ -31,6 +32,7 @@ const AdminCategory = () => {
 
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedCategoryIdForDelete, setSelectedCategoryIdForDelete] = useState<string | null>(null);
+  const [selectedCategoryIdForRestore, setSelectedCategoryIdForRestore] = useState<string | null>(null);
   const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<CategoryRep | null>(null);
 
   const { query } = useExecute();
@@ -89,39 +91,91 @@ const AdminCategory = () => {
   }, [searchInput, statusFilter, categories]);
 
   //  DELETE 
-const confirmDelete = async () => {
-  if (!selectedCategoryIdForDelete) return;
+  const confirmDelete = async () => {
+    if (!selectedCategoryIdForDelete) return;
 
-  const result = await query(
-    softDeleteCategory(selectedCategoryIdForDelete)
-  );
-
-  if (!result) {
-    showToast("Error", "Không nhận được phản hồi từ server");
-    return;
-  }
-
-  if (result.errors) {
-    showErrorResponse(result.errors);
-    return;
-  }
-
-  if (result.data) {
-    showToast("Success", "Đã xóa danh mục");
-
-    setCategories(prev =>
-      prev.map(cat =>
-        cat.id === selectedCategoryIdForDelete
-          ? { ...cat, isDelete: true }
-          : cat
-      )
+    const result = await query(
+      softDeleteCategory(selectedCategoryIdForDelete)
     );
 
-    setDeletedCategories(prev => prev + 1);
-  }
+    if (!result) {
+      showToast("Error", "Không nhận được phản hồi từ server");
+      return;
+    }
 
-  setSelectedCategoryIdForDelete(null);
-};
+    if (result.errors) {
+      showErrorResponse(result.errors);
+      return;
+    }
+
+    if (result.data) {
+      showToast("Success", "Đã xóa danh mục");
+
+      setCategories(prev =>
+        prev.map(cat =>
+          cat.id === selectedCategoryIdForDelete
+            ? { ...cat, isDelete: true }
+            : cat
+        )
+      );
+      setFilteredCategories(prev =>
+        prev.map(cat =>
+          cat.id === selectedCategoryIdForDelete
+            ? { ...cat, isDelete: true }
+            : cat
+        )
+      );
+
+      setDeletedCategories(prev => prev + 1);
+    }
+
+    setSelectedCategoryIdForDelete(null);
+  };
+
+  //Status change
+  const handleReActivateCategory = async (id: string) => {
+    const result = await query(reActivateCategory(id));
+
+    if (!result) {
+      showToast("Error", "Không nhận được phản hồi từ server");
+      return;
+    }
+
+    if (result.errors) {
+      showErrorResponse(result.errors);
+      return;
+    }
+
+    if (result.data) {
+      showToast("Success", "Đã mở khoá danh mục");
+
+      setCategories(prev =>
+        prev.map(cat =>
+          cat.id === id
+            ? { ...cat, isDelete: false }
+            : cat
+        )
+      );
+
+      setFilteredCategories(prev =>
+        prev.map(cat =>
+          cat.id === id
+            ? { ...cat, isDelete: false }
+            : cat
+        )
+      );
+
+      setDeletedCategories(prev => prev - 1);
+    }
+  };
+
+  const confirmRestore = async () => {
+    if (!selectedCategoryIdForRestore) return;
+
+    await handleReActivateCategory(selectedCategoryIdForRestore);
+
+    setSelectedCategoryIdForRestore(null);
+  };
 
   //  ADD 
   const handleCategoryAdded = (newCategory: CategoryRep) => {
@@ -162,14 +216,14 @@ const confirmDelete = async () => {
       reactNode: (
         <span
           onClick={() =>
-            !category.isDelete &&
-            setSelectedCategoryIdForDelete(category.id)
-          }
-          className={`px-2 py-1 rounded cursor-pointer ${
             category.isDelete
-              ? "text-red-600 bg-red-100"
-              : "text-green-600 bg-green-100"
-          }`}
+              ? handleReActivateCategory(category.id)
+              : setSelectedCategoryIdForDelete(category.id)
+          }
+          className={`px-2 py-1 rounded cursor-pointer ${category.isDelete
+            ? "text-red-600 bg-red-100"
+            : "text-green-600 bg-green-100"
+            }`}
         >
           {category.isDelete ? "Đã xóa" : "Hoạt động"}
         </span>
@@ -179,25 +233,35 @@ const confirmDelete = async () => {
     {
       reactNode: (
         <div className="flex gap-2">
-            {!category.isDelete && (
-          <button
-            onClick={() => setSelectedCategoryForEdit(category)}
-            className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50"
-          >
-            Sửa
-          </button>
-            )}
+
           {!category.isDelete && (
+            <button
+              onClick={() => setSelectedCategoryForEdit(category)}
+              className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50"
+            >
+              Sửa
+            </button>
+          )}
+
+          {!category.isDelete ? (
             <button
               onClick={() => setSelectedCategoryIdForDelete(category.id)}
               className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600 hover:bg-red-50"
             >
               Xóa
             </button>
+          ) : (
+            <button
+              onClick={() => setSelectedCategoryIdForRestore(category.id)}
+              className="px-2 py-1 text-xs rounded ring-1 ring-green-300 text-green-600 hover:bg-green-50"
+            >
+              Khôi phục
+            </button>
           )}
+
         </div>
       ),
-    },
+    }
   ]));
 
   return (
@@ -349,6 +413,36 @@ const confirmDelete = async () => {
               <button
                 onClick={confirmDelete}
                 className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedCategoryIdForRestore && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+            <h2 className="text-lg font-semibold mb-3">
+              Xác nhận khôi phục
+            </h2>
+
+            <p className="text-gray-600 mb-6">
+              Bạn có chắc muốn khôi phục danh mục này?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedCategoryIdForRestore(null)}
+                className="px-4 py-2 rounded ring-1 ring-gray-300 hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+
+              <button
+                onClick={confirmRestore}
+                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
               >
                 Xác nhận
               </button>

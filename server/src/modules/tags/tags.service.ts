@@ -5,7 +5,7 @@ import { CommonStatus } from 'prisma/generated/client';
 
 @Injectable()
 export class TagsService {
-    constructor(private prismaService: PrismaService) {}
+    constructor(private prismaService: PrismaService) { }
 
     async getTags() {
         const result = await this.prismaService.prismaClient.tags.findMany({
@@ -178,5 +178,29 @@ export class TagsService {
         });
 
         return deletedTag;
+    }
+
+    async reActivateTag(id: string) {
+        const tag = await this.prismaService.prismaClient.tags.findUnique({
+            where: { id },
+        });
+
+        if (!tag) {
+            throw new NotFoundException('Không tìm thấy thẻ');
+        }
+
+        if (!tag.isDelete) {
+            throw new BadRequestException('Thẻ này đang được kích hoạt');
+        }
+
+
+        const reActivatedTag = await this.prismaService.prismaClient.tags.update({
+            where: { id },
+            data: {
+                isDelete: false,
+            },
+        });
+
+        return reActivatedTag;
     }
 }

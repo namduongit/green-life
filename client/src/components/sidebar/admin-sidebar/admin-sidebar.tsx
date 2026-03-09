@@ -36,11 +36,11 @@ const AdminSidebar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: bool
                         items: [
                             {
                                 des: "Danh mục sản phẩm",
-                                url: "/admin/category"
+                                url: ""
                             },
                             {
                                 des: "Thẻ sản phẩm",
-                                url: "/admin/tag"
+                                url: ""
                             }
                         ]
                     }
@@ -161,21 +161,20 @@ const AdminSidebar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: bool
                                                 {/* List - items's children. Open when isActive = true */}
                                                 {item.children.isActive && (
                                                     <div className="activate-children relative z-0 ps-3">
-                                                        {item.children.items && item.children.items.map((child, idx) => (
-                                                            <a
+                                                        {item.children.items && item.children.items.map((item, idx) => (
+                                                            <div
                                                                 key={idx}
-                                                                href={child.url}
                                                                 className="flex gap-2 activate-children px-2 py-2 
-        hover:bg-[#262626] rounded cursor-pointer"
-                                                            >
+                                                                hover:bg-[#262626] rounded cursor-pointer">
                                                                 <div>
                                                                     <div className="w-px h-3 bg-white"></div>
                                                                     <div className="w-3 h-px bg-white"></div>
+                                                                    <div className=""></div>
                                                                 </div>
                                                                 <div>
-                                                                    <span>{child.des}</span>
+                                                                    <span>{item.des}</span>
                                                                 </div>
-                                                            </a>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 )}

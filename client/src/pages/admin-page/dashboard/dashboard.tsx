@@ -1,7 +1,7 @@
 const AdminDashboard = () => {
     return (
         <div>
-            skibidi toia
+            heheheh
         </div>
     )
 }

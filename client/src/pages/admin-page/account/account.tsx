@@ -8,7 +8,6 @@ import { deActivateAccount, activateAccount } from "../../../services/account/ac
 import { useExecute } from "../../../hooks/execute";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
 import AddAccount from "../../../components/add/account/add-account";
-import EditAccount from "../../../components/edit/account/edit-account";
 
 const AdminAccount = () => {
     const [searchInput, setSearchInput] = useState<string>("");
@@ -32,7 +31,7 @@ const AdminAccount = () => {
     const [showAddModal, setShowAddModal] = useState<boolean>(false);
     const [selectedAccountIdForDeActivation, setSelectedAccountIdForDeActivation] = useState<string | null>(null);
     const [selectedAccountIdForActivation, setSelectedAccountIdForActivation] = useState<string | null>(null);
-    const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<AccountRep | null>(null);
+
     const { query } = useExecute();
     const { showToast, showErrorResponse } = useToastContext();
 
@@ -62,8 +61,7 @@ const AdminAccount = () => {
                 account.id.toLowerCase().includes(searchInput.toLowerCase());
 
             const matchRole =
-                roleFilter === "" ||
-                account.role?.toLowerCase() === roleFilter.toLowerCase();
+                roleFilter === "" || account.role === roleFilter;
 
             return matchSearch && matchRole;
         });
@@ -181,9 +179,7 @@ const AdminAccount = () => {
         {
             reactNode: (
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setSelectedAccountForEdit(account)}
-                        className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50">Sửa</button>
+                    <button className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50">Sửa</button>
                     {account.isLock ? (
                         <button
                             onClick={() => handleActivateAccount(account.id)}
@@ -214,7 +210,7 @@ const AdminAccount = () => {
 
                 <div className="flex gap-3 items-center">
                     <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring-2 
-                            text-sm ring-gray-300">
+                        text-sm ring-gray-300">
                         <i className="fa-solid fa-arrow-up-from-bracket"></i>
                         <span>Xuất file</span>
                     </button>
@@ -222,7 +218,7 @@ const AdminAccount = () => {
                     <button
                         onClick={() => setShowAddModal(true)}
                         className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded
-                            text-sm ring-2 ring-blue-600 hover:bg-white hover:text-blue-600 transition">
+                        text-sm ring-2 ring-blue-600 hover:bg-white hover:text-blue-600 transition">
                         <i className="fa-solid fa-user-plus"></i>
                         <span>Thêm tài khoản</span>
                     </button>
@@ -256,8 +252,8 @@ const AdminAccount = () => {
                                     onChange={(e) => setRoleFilter(e.target.value)}
                                     className="w-full none-input text-sm py-1">
                                     <option value="">Tất cả</option>
-                                    <option value="ADMIN">Quản trị viên</option>
-                                    <option value="USER">Người dùng</option>
+                                    <option value="admin">Quản trị viên</option>
+                                    <option value="user">Người dùng</option>
                                 </select>
                             </div>
                         </div>
@@ -267,7 +263,7 @@ const AdminAccount = () => {
                 <div className="flex gap-2">
                     <div>
                         <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
-                                text-sm ring-gray-300">
+                            text-sm ring-gray-300">
                             <i className="fa-solid fa-arrow-down-wide-short"></i>
                             <span>Bộ lọc</span>
                         </button>
@@ -278,7 +274,7 @@ const AdminAccount = () => {
                     </div>
 
                     <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
-                                text-sm ring-gray-300">
+                            text-sm ring-gray-300">
                         <i className="fa-solid fa-gear"></i>
                     </button>
                 </div>
@@ -386,20 +382,6 @@ const AdminAccount = () => {
                         </div>
                     </div>
                 </div>
-            )}
-            {selectedAccountForEdit && (
-                <EditAccount
-                    account={selectedAccountForEdit}
-                    onClose={() => setSelectedAccountForEdit(null)}
-                    onUpdated={(updated) => {
-                        setAccounts(prev =>
-                            prev.map(acc =>
-                                acc.id === updated.id ? updated : acc
-                            )
-                        );
-                        setSelectedAccountForEdit(null);
-                    }}
-                />
             )}
         </div>
     )

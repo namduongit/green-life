@@ -6,6 +6,7 @@ import { CreateAddressDto } from '../addresses/dto/create-address-dto';
 import { UpdateAddressDto } from '../addresses/dto/update-address-dto';
 import { AddressesService } from '../addresses/addresses.service';
 import { CartsService } from '../carts/carts.service';
+import { QueryAccountDto } from './dto/get-dto';
 
 @Controller('api/users')
 export class AccountsController {
@@ -16,7 +17,7 @@ export class AccountsController {
     ) {}
 
     @Get()
-    findAll(@Query() query: any) {
+    findAll(@Query(new QueryAccountDto()) query: any) {
         return this.usersService.findAll(query);
     }
 

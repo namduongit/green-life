@@ -3,12 +3,18 @@ import { PrismaService } from 'src/configs/prisma-client.config';
 import { CreateUserDto } from './dto/create-dto';
 import { UpdateUserDto } from './dto/update-dto';
 import type { AccountRep } from './dto/account-response';
+import { SearchParamsQuery } from 'prisma-searchparams-mapper';
+import { Prisma } from 'prisma/generated/browser';
 
 @Injectable()
 export class AccountsService {
     constructor(private readonly prismaService: PrismaService) {}
-    async findAll(query: any): Promise<AccountRep[]> {
-        const data = await this.prismaService.prismaClient.accounts.findMany();
+    async findAll(
+        query: SearchParamsQuery<Prisma.AccountsWhereInput, Prisma.AccountsOrderByWithRelationInput>,
+    ): Promise<AccountRep[]> {
+        const data = await this.prismaService.prismaClient.accounts.findMany({
+            ...query,
+        });
         return data.map((account) => ({
             id: account.id,
             createdAt: account.createdAt,

@@ -11,7 +11,6 @@ import { ModalConfirmProvider } from './contexts/modal-confirm/modal-confirm'
 import AdminDashboard from './pages/admin-page/dashboard/dashboard'
 import AdminLayout from './pages/admin-page/layout'
 import AdminAccount from './pages/admin-page/account/account'
-import AdminProduct from './pages/admin-page/product/product'
 import { AuthProvider } from './contexts/auth/auth'
 import ProductPage from './pages/product/product'
 
@@ -40,7 +39,6 @@ createRoot(document.getElementById('root')!).render(
               <Route path='/admin/' element={<AdminDashboard />} />
               <Route path='/admin/dashboard' element={<AdminDashboard />} />
               <Route path='/admin/accounts' element={<AdminAccount />} />
-              <Route path='/admin/products' element={<AdminProduct />} />
             </Route>
 
           </Routes>

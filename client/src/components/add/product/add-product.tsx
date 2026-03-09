@@ -4,6 +4,8 @@ import { getAllCategories } from "../../../services/category/category";
 import { getAllTags } from "../../../services/tag/tag";
 import type { ProductRep } from "../../../services/product/product.type";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
+import { useExecute } from "../../../hooks/execute";
+import ButtonForm from "../../button/button-form/button-form";
 
 interface Props {
     onProductAdded?: (product: ProductRep) => void;
@@ -39,10 +41,12 @@ type FormState = {
 const UNIT_OPTIONS = ["Gram", "Kilogram", "Other"] as const;
 
 const AddProduct = ({ onProductAdded, onClose }: Props) => {
-    const [loading, setLoading] = useState(false);
+    const { query, loading } = useExecute();
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
     const { showToast, showErrorResponse } = useToastContext();
+    const [imageMode, setImageMode] = useState<"upload" | "url">("url");
+    const [previewImage, setPreviewImage] = useState<string>("");
     const [form, setForm] = useState<FormState>({
         name: "",
         description: "",
@@ -87,6 +91,23 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
 
         fetchData();
     }, []);
+
+    useEffect(() => {
+        setPreviewImage(form.urlImage);
+    }, [form.urlImage]);
+
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64String = e.target?.result as string;
+            setForm({ ...form, urlImage: base64String });
+            setPreviewImage(base64String);
+        };
+        reader.readAsDataURL(file);
+    };
 
     const validate = () => {
         const newErrors: Record<string, string> = {};
@@ -139,8 +160,6 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
         }
     };
 
-
-
     const handleSubmit = async () => {
         if (!validate()) return;
 
@@ -148,9 +167,7 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
             currentStock: Number(form.currentStock || 0),
             status: form.status,
             categoryId: form.categoryId,
-
             price: Number(form.price),
-
             property: {
                 urlImage: form.urlImage,
                 name: form.name,
@@ -161,95 +178,157 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
                 width: Number(form.width || 0),
                 height: Number(form.height || 0),
             },
-
             tags: form.tags.map(tagId => ({
                 id: tagId
             }))
         };
 
         try {
-            setLoading(true);
-            console.log("BODY SEND:", body);
-            const res = await createProduct(body);
+            const res = await query(createProduct(body));
 
-            if (!res?.data) return;
-            showToast("Success", "Tạo sản phẩm thành công");
-            onProductAdded?.(res.data);
-            onClose?.();
+            if (res?.errors) {
+                showErrorResponse(res.errors);
+            } else if (res?.data) {
+                showToast("Success", "Tạo sản phẩm thành công!");
+                onProductAdded?.(res.data);
+                setTimeout(() => {
+                    onClose?.();
+                }, 500);
+            }
         } catch (err: any) {
-            console.error(err.response?.data);
-            alert("Tạo sản phẩm thất bại");
-        } finally {
-            setLoading(false);
+            console.error(err);
+            showToast("Error", "Tạo sản phẩm thất bại");
         }
     };
 
     const inputClass = (field: string) =>
-        `border p-2 w-full rounded ${errors[field] ? "border-red-500" : ""
-        }`;
+        `px-3 ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700 py-2 w-full ${errors[field] ? "ring-red-500" : ""}`;
 
     return (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-            <div className="bg-white w-full max-w-xl rounded-lg shadow-lg p-6 max-h-[90vh] overflow-y-auto space-y-5">
+        <div className="fixed top-0 start-0 bg-gray-800/60 w-full h-screen flex items-center justify-center px-2 md:px-0 z-50">
+            <div className="w-full max-w-xl bg-white rounded-lg shadow-lg max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-gray-300">
+                    <h1 className="text-lg font-semibold text-blue-700">Thêm sản phẩm mới</h1>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                    >
+                        x
+                    </button>
+                </div>
 
-                <h2 className="text-lg font-semibold text-gray-800">
-                    Thêm sản phẩm mới
-                </h2>
-
-
-                <div className="space-y-4">
+                <div className="px-6 py-6 space-y-4">
 
                     {/* NAME */}
-                    <div>
-                        <label className="block text-sm font-medium">
-                            Tên sản phẩm *
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="name" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
+                            Tên sản phẩm
                         </label>
                         <input
+                            id="name"
                             placeholder="VD: Chuột Gaming Razer Viper"
                             className={inputClass("name")}
                             value={form.name}
                             onChange={e => setForm({ ...form, name: e.target.value })}
                         />
                         {errors.name && (
-                            <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                            <p className="text-red-500 text-xs">{errors.name}</p>
                         )}
                     </div>
-                    {/* IMAGE URL */}
-                    <div>
-                        <label className="block text-sm font-medium">
-                            URL hình ảnh *
+
+                    {/* IMAGE UPLOAD/URL */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
+                            Hình ảnh sản phẩm
                         </label>
+                        
+                        <div className="flex gap-2 mb-2">
+                            <button
+                                type="button"
+                                onClick={() => setImageMode("upload")}
+                                className={`flex-1 px-3 py-2 rounded text-sm font-medium transition ${
+                                    imageMode === "upload"
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                }`}
+                            >
+                                <i className="fa-solid fa-cloud-arrow-up me-2"></i>
+                                Upload ảnh
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setImageMode("url")}
+                                className={`flex-1 px-3 py-2 rounded text-sm font-medium transition ${
+                                    imageMode === "url"
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                }`}
+                            >
+                                <i className="fa-solid fa-link me-2"></i>
+                                Nhập URL
+                            </button>
+                        </div>
 
-                        <input
-                            placeholder="https://example.com/image.jpg"
-                            className={inputClass("urlImage")}
-                            value={form.urlImage}
-                            onChange={e =>
-                                setForm({ ...form, urlImage: e.target.value })
-                            }
-                        />
-
-                        {errors.urlImage && (
-                            <p className="text-red-500 text-xs mt-1">
-                                {errors.urlImage}
-                            </p>
+                        {imageMode === "upload" ? (
+                            <div>
+                                <label
+                                    htmlFor="imageUpload"
+                                    className="px-3 ring-1 ring-gray-400 rounded-lg py-2 w-full flex items-center justify-center cursor-pointer hover:bg-gray-50 transition border-dashed border-2 border-gray-300"
+                                >
+                                    <div className="text-center">
+                                        <i className="fa-solid fa-image text-gray-400 text-2xl mb-1"></i>
+                                        <p className="text-sm text-gray-600">Chọn ảnh từ máy tính</p>
+                                        <p className="text-xs text-gray-500">PNG, JPG, GIF (Max 5MB)</p>
+                                    </div>
+                                    <input
+                                        id="imageUpload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageUpload}
+                                    />
+                                </label>
+                            </div>
+                        ) : (
+                            <input
+                                type="text"
+                                placeholder="https://example.com/image.jpg"
+                                className={inputClass("urlImage")}
+                                value={form.urlImage}
+                                onChange={e =>
+                                    setForm({ ...form, urlImage: e.target.value })
+                                }
+                            />
                         )}
 
-                        {form.urlImage && (
-                            <img
-                                src={form.urlImage}
-                                alt="Preview"
-                                className="mt-3 w-24 h-24 object-cover rounded border"
-                            />
+                        {previewImage && (
+                            <div className="mt-2">
+                                <p className="text-xs text-gray-600 mb-1">Preview:</p>
+                                <img
+                                    src={previewImage}
+                                    alt="Preview"
+                                    className="w-24 h-24 object-cover rounded border"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = "none";
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {errors.urlImage && (
+                            <p className="text-red-500 text-xs">
+                                {errors.urlImage}
+                            </p>
                         )}
                     </div>
 
                     {/* PRICE */}
-                    <div>
-                        <label className="block text-sm font-medium">
-                            Giá bán (VND) *
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="price" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
+                            Giá bán (VND)
                         </label>
                         <input
+                            id="price"
                             type="number"
                             placeholder="VD: 1500000"
                             className={inputClass("price")}
@@ -257,16 +336,17 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
                             onChange={e => setForm({ ...form, price: e.target.value })}
                         />
                         {errors.price && (
-                            <p className="text-red-500 text-xs mt-1">{errors.price}</p>
+                            <p className="text-red-500 text-xs">{errors.price}</p>
                         )}
                     </div>
 
                     {/* STOCK */}
-                    <div>
-                        <label className="block text-sm font-medium">
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="stock" className="text-blue-700 font-medium">
                             Số lượng tồn kho
                         </label>
                         <input
+                            id="stock"
                             type="number"
                             placeholder="VD: 100"
                             className={inputClass("currentStock")}
@@ -276,44 +356,48 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
                             }
                         />
                         {errors.currentStock && (
-                            <p className="text-red-500 text-xs mt-1">
+                            <p className="text-red-500 text-xs">
                                 {errors.currentStock}
                             </p>
                         )}
                     </div>
 
                     {/* CATEGORY */}
-                    <div>
-                        <label className="block text-sm font-medium">
-                            Danh mục *
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="category" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
+                            Danh mục
                         </label>
-                        <select
-                            className={inputClass("categoryId")}
-                            value={form.categoryId}
-                            onChange={e =>
-                                setForm({ ...form, categoryId: e.target.value })
-                            }
-                        >
-                            <option value="">-- Chọn danh mục --</option>
-                            {categories.map(c => (
-                                <option key={c.id} value={c.id}>
-                                    {c.name}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700">
+                            <select
+                                id="category"
+                                className="w-full none-input py-2 px-3 text-sm"
+                                value={form.categoryId}
+                                onChange={e =>
+                                    setForm({ ...form, categoryId: e.target.value })
+                                }
+                            >
+                                <option value="">-- Chọn danh mục --</option>
+                                {categories.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         {errors.categoryId && (
-                            <p className="text-red-500 text-xs mt-1">
+                            <p className="text-red-500 text-xs">
                                 {errors.categoryId}
                             </p>
                         )}
                     </div>
 
                     {/* Weight */}
-                    <div>
-                        <label className="block text-sm font-medium">
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="weight" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
                             Trọng lượng
                         </label>
                         <input
+                            id="weight"
                             type="number"
                             placeholder="VD: 100"
                             className={inputClass("weight")}
@@ -323,108 +407,116 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
                             }
                         />
                         {errors.weight && (
-                            <p className="text-red-500 text-xs mt-1">
+                            <p className="text-red-500 text-xs">
                                 {errors.weight}
                             </p>
                         )}
                     </div>
 
                     {/* UNIT */}
-                    <div>
-                        <label className="block text-sm font-medium">
-                            Đơn vị *
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="unit" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
+                            Đơn vị
                         </label>
-
-                        <select
-                            className={inputClass("unit")}
-                            value={form.unit}
-                            onChange={e => setForm({ ...form, unit: e.target.value })}
-                        >
-                            <option value="">-- Chọn đơn vị --</option>
-                            {UNIT_OPTIONS.map(unit => (
-                                <option key={unit} value={unit}>
-                                    {unit}
-                                </option>
-                            ))}
-                        </select>
-
+                        <div className="ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700">
+                            <select
+                                id="unit"
+                                className="w-full none-input py-2 px-3 text-sm"
+                                value={form.unit}
+                                onChange={e => setForm({ ...form, unit: e.target.value })}
+                            >
+                                <option value="">-- Chọn đơn vị --</option>
+                                {UNIT_OPTIONS.map(unit => (
+                                    <option key={unit} value={unit}>
+                                        {unit}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         {errors.unit && (
-                            <p className="text-red-500 text-xs mt-1">{errors.unit}</p>
+                            <p className="text-red-500 text-xs">{errors.unit}</p>
                         )}
                     </div>
-                </div>
 
-                {/* ===== THÔNG SỐ ===== */}
-                <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-gray-700">
-                        Thông số kỹ thuật
-                    </h3>
+                    {/* SPECIFICATIONS */}
+                    <div className="space-y-2">
+                        <h3 className="text-sm font-semibold text-blue-700">
+                            Thông số kỹ thuật
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="flex flex-col gap-1">
+                                <label htmlFor="length" className="text-gray-700 font-medium text-xs">Chiều dài (cm)</label>
+                                <input
+                                    id="length"
+                                    type="number"
+                                    placeholder="Dài"
+                                    className={inputClass("length")}
+                                    value={form.length}
+                                    onChange={e => setForm({ ...form, length: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label htmlFor="width" className="text-gray-700 font-medium text-xs">Chiều rộng (cm)</label>
+                                <input
+                                    id="width"
+                                    type="number"
+                                    placeholder="Rộng"
+                                    className={inputClass("width")}
+                                    value={form.width}
+                                    onChange={e => setForm({ ...form, width: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label htmlFor="height" className="text-gray-700 font-medium text-xs">Chiều cao (cm)</label>
+                                <input
+                                    id="height"
+                                    type="number"
+                                    placeholder="Cao"
+                                    className={inputClass("height")}
+                                    value={form.height}
+                                    onChange={e => setForm({ ...form, height: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </div>
 
-                    <div className="grid grid-cols-3 gap-3">
-                        <input
-                            type="number"
-                            placeholder="Chiều dài (cm)"
-                            className={inputClass("length")}
-                            value={form.length}
-                            onChange={e => setForm({ ...form, length: e.target.value })}
-                        />
-
-                        <input
-                            type="number"
-                            placeholder="Chiều rộng (cm)"
-                            className={inputClass("width")}
-                            value={form.width}
-                            onChange={e => setForm({ ...form, width: e.target.value })}
-                        />
-
-                        <input
-                            type="number"
-                            placeholder="Chiều cao (cm)"
-                            className={inputClass("height")}
-                            value={form.height}
-                            onChange={e => setForm({ ...form, height: e.target.value })}
-                        />
+                    {/* TAG */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-blue-700 font-medium">
+                            Gắn Tag
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                            {tags.map(tag => (
+                                <button
+                                    key={tag.id}
+                                    type="button"
+                                    onClick={() => toggleTag(tag.id)}
+                                    className={`px-3 py-1 text-sm rounded-full border transition ${form.tags.includes(tag.id)
+                                        ? "bg-blue-600 text-white border-blue-600"
+                                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-600"
+                                        }`}
+                                >
+                                    {tag.name}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                {/*  TAG  */}
-                <div>
-                    <label className="block text-sm font-medium mb-2">
-                        Gắn Tag
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                        {tags.map(tag => (
-                            <button
-                                key={tag.id}
-                                type="button"
-                                onClick={() => toggleTag(tag.id)}
-                                className={`px-3 py-1 text-sm rounded-full border transition ${form.tags.includes(tag.id)
-                                    ? "bg-blue-600 text-white border-blue-600"
-                                    : "bg-gray-100"
-                                    }`}
-                            >
-                                {tag.name}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* ACTION */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
+                <div className="px-6 py-4 border-t border-gray-300 flex gap-3 justify-end">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm border rounded"
+                        className="px-4 py-2 text-gray-700 bg-white ring-1 ring-gray-300 rounded-lg hover:bg-gray-50 transition"
                     >
-                        Hủy
+                        Hủy bỏ
                     </button>
-
-                    <button
+                    <ButtonForm
+                        className="text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700"
                         onClick={handleSubmit}
-                        disabled={loading}
-                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded"
+                        inLoading={{ isLoading: loading, textLoading: "Đang thêm..." }}
                     >
-                        {loading ? "Đang lưu..." : "Lưu sản phẩm"}
-                    </button>
+                        Thêm sản phẩm
+                    </ButtonForm>
                 </div>
             </div>
         </div>

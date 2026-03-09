@@ -49,24 +49,28 @@ const Table = (prop: TableProps) => {
                                     <span>{col}</span>
                                 ) : col && typeof col === "object" ? (
                                     <div>
-                                        {col.string ? (
-                                            col.clipboard ? (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => handleCopy(col.clipboard!)}
-                                                        className="ring ring-gray-300 w-5 h-5 flex items-center justify-center rounded text-sm p-3 cursor-pointer hover:bg-gray-100"
-                                                    >
-                                                        <i className="fa-regular fa-clipboard"></i>
-                                                    </button>
+                                        {col.clipboard ? (
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleCopy(col.clipboard!)}
+                                                    className="border border-gray-300 w-5 h-5 flex items-center justify-center rounded text-sm p-3 cursor-pointer hover:bg-gray-100"
+                                                >
+                                                    <i className="fa-regular fa-clipboard"></i>
+                                                </button>
+                                                {col.string ? (
                                                     <span className={col.string.className}>
                                                         {col.string.content}
                                                     </span>
-                                                </div>
-                                            ) : (
-                                                <span className={col.string.className}>
-                                                    {col.string.content}
-                                                </span>
-                                            )
+                                                ) : col.reactNode ? (
+                                                    col.reactNode
+                                                ) : (
+                                                    <span></span>
+                                                )}
+                                            </div>
+                                        ) : col.string ? (
+                                            <span className={col.string.className}>
+                                                {col.string.content}
+                                            </span>
                                         ) : col.reactNode ? (
                                             col.reactNode
                                         ) : (

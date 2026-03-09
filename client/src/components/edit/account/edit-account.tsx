@@ -1,45 +1,51 @@
-import type { AccountRep } from "../../../services/account";
 import { useState, useEffect } from "react";
-import { updateAccount } from "../../../services/account/account";
+import { useExecute } from "../../../hooks/execute";
+import { updateAccount, type AccountRep } from "../../../services/account";
+import ButtonForm from "../../button/button-form/button-form";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
 
-type Props = {
+interface EditAccountProps {
     account: AccountRep;
-    onClose: () => void;
-    onUpdated: (updated: AccountRep) => void;
-};
+    onClose?: () => void;
+    onUpdated?: (updated: AccountRep) => void;
+}
 
-const EditAccount = ({ account, onClose, onUpdated }: Props) => {
-    const [email, setEmail] = useState(account.email);
-    const [role, setRole] = useState(account.role);
+const EditAccount = ({ account, onClose, onUpdated }: EditAccountProps) => {
+    const { query, loading } = useExecute();
     const { showToast, showErrorResponse } = useToastContext();
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [error, setError] = useState("");
+    const [isShowPassword, setIsShowPassword] = useState<boolean>(false);
+    const [isShowConfirmPassword, setIsShowConfirmPassword] = useState<boolean>(false);
+
+    const [accountForm, setAccountForm] = useState({
+        email: account.email,
+        password: "",
+        confirmPassword: "",
+        role: account.role
+    });
+
     useEffect(() => {
-        setEmail(account.email);
-        setRole(account.role);
-        setPassword("");
-        setConfirmPassword("");
-        setError("");
+        setAccountForm({
+            email: account.email,
+            password: "",
+            confirmPassword: "",
+            role: account.role
+        });
     }, [account]);
 
-    const handleSubmit = async () => {
-        setError("");
-
-        if (!email.trim()) {
-            setError("Email không được để trống");
+    const submitForm = async () => {
+        if (!accountForm.email.trim()) {
+            showToast("Error", "Email không được để trống");
             return;
         }
 
-        if (password || confirmPassword) {
-            if (password !== confirmPassword) {
-                setError("Mật khẩu nhập lại không khớp");
+        if (accountForm.password || accountForm.confirmPassword) {
+            if (accountForm.password !== accountForm.confirmPassword) {
+                showToast("Error", "Mật khẩu nhập lại không khớp");
                 return;
             }
 
-            if (password.length < 6) {
-                setError("Mật khẩu phải ít nhất 6 ký tự");
+            if (accountForm.password.length < 6) {
+                showToast("Error", "Mật khẩu phải ít nhất 6 ký tự");
                 return;
             }
         }
@@ -49,76 +55,148 @@ const EditAccount = ({ account, onClose, onUpdated }: Props) => {
             role: string;
             password?: string;
         } = {
-            email,
-            role
+            email: accountForm.email,
+            role: accountForm.role
         };
 
-        if (password.trim() !== "") {
-            payload.password = password;
+        if (accountForm.password.trim() !== "") {
+            payload.password = accountForm.password;
         }
 
-        const result = await updateAccount(account.id, payload);
+        const result = await query<AccountRep>(updateAccount(account.id, payload));
 
-        if (result?.data) {
-            onUpdated({ ...account, email, role });
-            showToast("Success", "Cập nhật tài khoản thành công");
-            onClose();
-        } else {
-            showErrorResponse("Cập nhật thất bại");
+        if (result?.errors) {
+            showErrorResponse(result.errors);
+        } else if (result?.data) {
+            showToast("Success", "Cập nhật tài khoản thành công!");
+            onUpdated?.(result.data);
+            setTimeout(() => {
+                onClose?.();
+            }, 500);
         }
     };
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
-            <div className="bg-white p-6 rounded w-96">
-                <h2 className="text-lg font-semibold mb-4">Chỉnh sửa tài khoản</h2>
-
-                <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="border p-2 w-full mb-3"
-                />
-
-                <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="border p-2 w-full mb-4"
-                >
-                    <option value="Admin">Admin</option>
-                    <option value="User">User</option>
-                </select>
-                <input
-                    type="password"
-                    placeholder="Mật khẩu mới"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="border p-2 w-full mb-3"
-                />
-
-                <input
-                    type="password"
-                    placeholder="Nhập lại mật khẩu"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="border p-2 w-full mb-3"
-                />
-
-                {error && (
-                    <p className="text-red-500 text-sm mb-3">{error}</p>
-                )}
-
-                <div className="flex justify-end gap-2">
-                    <button onClick={onClose}>Hủy</button>
+        <div className="fixed top-0 start-0 bg-gray-800/60 w-full h-screen flex items-center justify-center px-2 md:px-0 z-50">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-lg">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-gray-300">
+                    <h1 className="text-lg font-semibold text-blue-700">Chỉnh sửa tài khoản</h1>
                     <button
-                        onClick={handleSubmit}
-                        className="bg-blue-500 text-white px-4 py-1 rounded disabled:opacity-50"
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
                     >
-                        Lưu
+                        x
                     </button>
+                </div>
+
+                <div className="px-6 py-6 space-y-4">
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="email" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
+                            Email
+                        </label>
+                        <div className="px-3 ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700 flex items-center">
+                            <i className="fa-solid fa-envelope text-gray-600"></i>
+                            <input
+                                id="email"
+                                type="email"
+                                className="none-input ps-2 py-2 w-full"
+                                placeholder="user@example.com"
+                                value={accountForm.email}
+                                onChange={(event) =>
+                                    setAccountForm({ ...accountForm, email: event.target.value })
+                                }
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="password" className="text-blue-700 font-medium">
+                            Mật khẩu mới (để trống nếu không đổi)
+                        </label>
+                        <div className="px-3 ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700 flex items-center">
+                            <i className="fa-solid fa-key text-gray-600"></i>
+                            <input
+                                id="password"
+                                type={isShowPassword ? "text" : "password"}
+                                className="none-input ps-2 py-2 w-full"
+                                placeholder="Tối thiểu 6 ký tự"
+                                value={accountForm.password}
+                                onChange={(event) =>
+                                    setAccountForm({ ...accountForm, password: event.target.value })
+                                }
+                            />
+                            <i
+                                className={`fa-solid ${
+                                    isShowPassword ? "fa-eye" : "fa-eye-slash"
+                                } text-gray-600 cursor-pointer`}
+                                onClick={() => setIsShowPassword(!isShowPassword)}
+                            ></i>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="confirmPassword" className="text-blue-700 font-medium">
+                            Nhập lại mật khẩu
+                        </label>
+                        <div className="px-3 ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700 flex items-center">
+                            <i className="fa-solid fa-key text-gray-600"></i>
+                            <input
+                                id="confirmPassword"
+                                type={isShowConfirmPassword ? "text" : "password"}
+                                className="none-input ps-2 py-2 w-full"
+                                placeholder="Tối thiểu 6 ký tự"
+                                value={accountForm.confirmPassword}
+                                onChange={(event) =>
+                                    setAccountForm({ ...accountForm, confirmPassword: event.target.value })
+                                }
+                            />
+                            <i
+                                className={`fa-solid ${
+                                    isShowConfirmPassword ? "fa-eye" : "fa-eye-slash"
+                                } text-gray-600 cursor-pointer`}
+                                onClick={() => setIsShowConfirmPassword(!isShowConfirmPassword)}
+                            ></i>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <label htmlFor="role" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
+                            Vai trò
+                        </label>
+                        <div className="ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700">
+                            <select
+                                id="role"
+                                className="w-full none-input py-2 px-3 text-sm"
+                                value={accountForm.role}
+                                onChange={(event) =>
+                                    setAccountForm({ ...accountForm, role: event.target.value })
+                                }
+                            >
+                                <option value="User">Người dùng</option>
+                                <option value="Admin">Quản trị viên</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="px-6 py-4 border-t border-gray-300 flex gap-3 justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-gray-700 bg-white ring-1 ring-gray-300 rounded-lg hover:bg-gray-50 transition"
+                    >
+                        Hủy bỏ
+                    </button>
+                    <ButtonForm
+                        className="text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700"
+                        onClick={submitForm}
+                        inLoading={{ isLoading: loading, textLoading: "Đang cập nhật..." }}
+                    >
+                        Cập nhật tài khoản
+                    </ButtonForm>
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
 export default EditAccount;

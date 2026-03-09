@@ -14,6 +14,8 @@ import type { ProductRep } from "../../../services/product/product.type";
 import AddProduct from "../../../components/add/product/add-product";
 import EditProduct from "../../../components/edit/product/edit-product";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
+import { useModalConfirmContext } from "../../../contexts/modal-confirm/modal-confirm";
+import { useExecute } from "../../../hooks/execute";
 
 const AdminProduct = () => {
     const [products, setProducts] = useState<ProductRep[]>([]);
@@ -32,36 +34,34 @@ const AdminProduct = () => {
 
     const [totalProducts, setTotalProducts] = useState(0);
     const [deletedProducts, setDeletedProducts] = useState(0);
-    const { showToast } = useToastContext();
+    const { showToast, showErrorResponse } = useToastContext();
+    const { waitConfirm } = useModalConfirmContext();
+    const { query } = useExecute();
 
     // FETCH
     const fetchProducts = async () => {
-        try {
-            setLoading(true);
-
-            const res = await getAllProducts();
-
-            const data: ProductRep[] = Array.isArray(res.data)
-                ? res.data
-                : Array.isArray(res.data?.data)
-                    ? res.data.data
-                    : [];
+        setLoading(true);
+        const result = await query<ProductRep[]>(getAllProducts());
+        if (result?.errors) {
+            showErrorResponse(result.errors);
+        } else if (result?.data) {
+            console.log("Fetched products:", result.data);
+            const data: ProductRep[] = Array.isArray(result.data)
+                ? result.data
+                :  [];
 
             setProducts(data);
             setFilteredProducts(data);
             setTotalProducts(data.length);
             setDeletedProducts(data.filter(p => p.isDelete).length);
-        } catch (err) {
-            console.error("Fetch error:", err);
-            setProducts([]);
-            setFilteredProducts([]);
-        } finally {
-            setLoading(false);
         }
+        setLoading(false);
     };
+
     useEffect(() => {
         fetchProducts();
     }, []);
+
     // SEARCH
     useEffect(() => {
         const filtered = products.filter(product => {
@@ -84,36 +84,33 @@ const AdminProduct = () => {
     const confirmDelete = async () => {
         if (!selectedProductIdForDelete) return;
 
-        try {
-            const response = await deleteProduct(selectedProductIdForDelete);
+        const confirm = await waitConfirm();
+        if (!confirm) return;
 
-            if (response.status === 200 || response.status === 204) {
-                showToast("Success", "Đã xóa sản phẩm");
+        const result = await query(deleteProduct(selectedProductIdForDelete));
 
-                setProducts(prev =>
-                    prev.map(p =>
-                        p.id === selectedProductIdForDelete
-                            ? { ...p, isDelete: true }
-                            : p
-                    )
-                );
+        if (result?.errors) {
+            showErrorResponse(result.errors);
+        } else if (result?.data) {
+            showToast("Success", "Đã xóa sản phẩm");
 
-                setFilteredProducts(prev =>
-                    prev.map(p =>
-                        p.id === selectedProductIdForDelete
-                            ? { ...p, isDelete: true }
-                            : p
-                    )
-                );
+            setProducts(prev =>
+                prev.map(p =>
+                    p.id === selectedProductIdForDelete
+                        ? { ...p, isDelete: true }
+                        : p
+                )
+            );
 
-                setDeletedProducts(prev => prev + 1);
-            } else {
-                showToast("Error", "Xóa sản phẩm thất bại");
-            }
+            setFilteredProducts(prev =>
+                prev.map(p =>
+                    p.id === selectedProductIdForDelete
+                        ? { ...p, isDelete: true }
+                        : p
+                )
+            );
 
-        } catch (error) {
-            console.error(error);
-            showToast("Error", "Xóa sản phẩm thất bại");
+            setDeletedProducts(prev => prev + 1);
         }
 
         setSelectedProductIdForDelete(null);
@@ -141,7 +138,17 @@ const AdminProduct = () => {
     ];
 
     const tableBody: TableBody = currentProducts.map(product => [
-        product.id,
+        {
+            reactNode: (
+                <div
+                    className="max-w-45 truncate"
+                    title={product.id}
+                >
+                    {product.id}
+                </div>
+            ),
+            clipboard: product.id
+        },
 
         {
             reactNode: product.property?.urlImage ? (
@@ -154,9 +161,27 @@ const AdminProduct = () => {
             ),
         },
 
-        product.property?.name ?? "N/A",
+        {
+            reactNode: (
+                <div
+                    className="max-w-50 truncate"
+                    title={product.property?.name ?? "N/A"}
+                >
+                    {product.property?.name ?? "N/A"}
+                </div>
+            )
+        },
 
-        product.category?.name ?? "N/A",
+        {
+            reactNode: (
+                <div
+                    className="max-w-45 truncate"
+                    title={product.category?.name ?? "N/A"}
+                >
+                    {product.category?.name ?? "N/A"}
+                </div>
+            )
+        },
 
         String(product.currentStock ?? 0),
 
@@ -170,7 +195,20 @@ const AdminProduct = () => {
 
         product.property?.unit ?? "N/A",
 
-        product.isDelete ? "Đã xóa" : product.status,
+        {
+            reactNode: (
+                <span
+                    className={`px-2 py-1 rounded ${product.isDelete
+                        ? "text-gray-600 bg-gray-100"
+                        : product.status === "Active"
+                            ? "text-green-600 bg-green-100"
+                            : "text-yellow-600 bg-yellow-100"
+                        }`}
+                >
+                    {product.isDelete ? "Đã xóa" : product.status}
+                </span>
+            )
+        },
 
         {
             reactNode: (
@@ -179,7 +217,7 @@ const AdminProduct = () => {
                         <>
                             <button
                                 onClick={() => setSelectedProductForEdit(product)}
-                                className="px-2 py-1 text-xs rounded ring-1 ring-gray-300"
+                                className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
                             >
                                 Sửa
                             </button>
@@ -188,7 +226,7 @@ const AdminProduct = () => {
                                 onClick={() =>
                                     setSelectedProductIdForDelete(product.id)
                                 }
-                                className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600"
+                                className="px-2 py-1 text-xs rounded border ring-red-300 text-red-600 hover:bg-red-50"
                             >
                                 Xóa
                             </button>
@@ -201,46 +239,75 @@ const AdminProduct = () => {
 
     return (
         <div className="px-8 pt-5 space-y-5">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-semibold text-blue-700">
-                    Product Management
-                </h1>
+            <div className="flex justify-between">
+                <div>
+                    <h1 className="text-blue-700 text-2xl font-semibold">Product management</h1>
+                    <p className="text-gray-500 text-sm">Quản lý các sản phẩm có trong hệ thống</p>
+                </div>
 
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                >
-                    Thêm sản phẩm
-                </button>
+                <div className="flex gap-3 items-center">
+                    <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring-2 
+                            text-sm ring-gray-300">
+                        <i className="fa-solid fa-arrow-up-from-bracket"></i>
+                        <span>Xuất file</span>
+                    </button>
+
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded
+                            text-sm ring-2 ring-blue-600 hover:bg-white hover:text-blue-600 transition">
+                        <i className="fa-solid fa-plus"></i>
+                        <span>Thêm sản phẩm</span>
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-5 gap-5">
                 <Stats
-                    icon={<i className="fa-solid fa-box text-blue-500"></i>}
+                    icon={<i className="fa-regular fa-rectangle-list"></i>}
                     title="Tổng sản phẩm"
                     des={`${totalProducts} sản phẩm`}
                 />
                 <Stats
-                    icon={<i className="fa-solid fa-trash text-red-500"></i>}
+                    icon={<i className="fa-solid fa-trash"></i>}
+                    iconColor="text-red-600"
+                    iconBg="bg-red-100"
                     title="Đã xóa"
                     des={`${deletedProducts} sản phẩm`}
                 />
             </div>
 
-            <InputSearch
-                searchInput={searchInput}
-                setSearchInput={setSearchInput}
-                opts={{ width: "w-74" }}
-            />
+            <div className="flex justify-between items-center">
+                <InputSearch
+                    searchInput={searchInput}
+                    setSearchInput={setSearchInput}
+                    opts={{ width: "w-74" }}
+                />
+
+                <div className="flex gap-2">
+                    <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
+                                text-sm ring-gray-300">
+                        <i className="fa-solid fa-arrow-down-wide-short"></i>
+                        <span>Bộ lọc</span>
+                    </button>
+
+                    <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
+                                text-sm ring-gray-300">
+                        <i className="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+            </div>
 
             {loading ? (
-                <p className="text-center py-10">Đang tải dữ liệu...</p>
+                <div className="flex justify-center items-center py-10">
+                    <p className="text-gray-500">Đang tải dữ liệu...</p>
+                </div>
             ) : (
                 <>
                     <Table tableHead={tableHead} tableBody={tableBody} />
 
-                    <div className="flex justify-between mt-4">
-                        <span>
+                    <div className="flex justify-between items-center mt-4">
+                        <span className="text-sm text-gray-500">
                             Trang {currentPage} / {totalPages || 1}
                         </span>
 
@@ -248,7 +315,7 @@ const AdminProduct = () => {
                             <button
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage(prev => prev - 1)}
-                                className="px-3 py-1 ring-1 rounded"
+                                className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
                             >
                                 Previous
                             </button>
@@ -256,7 +323,7 @@ const AdminProduct = () => {
                             <button
                                 disabled={currentPage === totalPages || totalPages === 0}
                                 onClick={() => setCurrentPage(prev => prev + 1)}
-                                className="px-3 py-1 ring-1 rounded"
+                                className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
                             >
                                 Next
                             </button>
@@ -295,32 +362,6 @@ const AdminProduct = () => {
                         setSelectedProductForEdit(null);
                     }}
                 />
-            )}
-
-            {selectedProductIdForDelete && (
-                <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-                    <div className="bg-white p-6 rounded w-96">
-                        <h2 className="mb-4 font-semibold">
-                            Xác nhận xóa sản phẩm?
-                        </h2>
-
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setSelectedProductIdForDelete(null)}
-                                className="px-4 py-2 ring-1 rounded"
-                            >
-                                Hủy
-                            </button>
-
-                            <button
-                                onClick={confirmDelete}
-                                className="px-4 py-2 bg-red-600 text-white rounded"
-                            >
-                                Xác nhận
-                            </button>
-                        </div>
-                    </div>
-                </div>
             )}
         </div>
     );

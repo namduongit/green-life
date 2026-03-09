@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 
 import { api } from "../../lib/api/api";
+=======
+import { api } from "../../api/api";
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
 import type { CategoryRep } from "./category.type";
 
 export const getAllCategories = async () => {
@@ -13,7 +17,11 @@ export const getCategoriesPagination = async (page: number, limit: number) => {
 };
 
 export const getCategoryById = async (id: string) => {
+<<<<<<< HEAD
     const response = await api.get<CategoryRep>(`/api/categories/by-id/${id}`);
+=======
+    const response = await api.get<CategoryRep[]>(`/api/categories/by-id/${id}`);
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
     return response;
 };
 
@@ -40,4 +48,8 @@ export const softDeleteCategory = async (id: string) => {
 export const reActivateCategory = async (id: string) => {
     const response = await api.patch<CategoryRep>(`/api/categories/${id}/activate`);
     return response;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)

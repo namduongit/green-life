@@ -13,16 +13,16 @@ export const useExecute = () => {
     const [loading, setLoading] = useState<boolean>(false);
 
 
-    const query = async <T>(promiseFunc: Promise<AxiosResponse>): Promise<QueryRespsonse<T>> => {
+    const query = async <T = any>(promiseFunc: Promise<AxiosResponse<T>>): Promise<QueryRespsonse<T>> => {
         try {
             setLoading(true);
 
             const result = await promiseFunc;
             console.log(result)
-            if (result.data) {
+            if (result.data && result.data) {
                 setLoading(false);
                 return {
-                    data: result.data.data,
+                    data: (result.data as any).data,
                     errors: null
                 }
             }

@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { api } from "../../lib/api/api"
 import type {AccountRep, AddressForm, AddressRep, AddToCartForm, CartItemRep, CreateAccountForm, UpdateAccountForm } from "./account.type";
+=======
+import { api } from "../../api/api"
+import type {AccountRep, AddressForm, AddressRep, AddToCartForm, CartRep, CreateAccountForm, UpdateAccountForm } from "./account.type";
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
 
 export const getAllAccounts = async () => {
     const response = await api.get<AccountRep[]>("/api/users");
@@ -7,7 +12,11 @@ export const getAllAccounts = async () => {
 };
 
 export const getAccountById = async (id: string) => {
+<<<<<<< HEAD
     const response = await api.get<AccountRep>(`/api/users/${id}`);
+=======
+    const response = await api.get<AccountRep[]>(`/api/users/${id}`);
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
     return response;
 };
 
@@ -27,7 +36,7 @@ export const deActivateAccount = async (id: string) => {
 }
 
 export const activateAccount = async (id: string) => {
-    const response = await api.patch(`/api/users/${id}/activate`);
+    const response = await api.patch<AccountRep>(`/api/users/${id}/activate`);
     return response;
 }
 

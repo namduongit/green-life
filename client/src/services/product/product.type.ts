@@ -35,10 +35,14 @@ type PropertyRep = {
 
 type CreateProductForm = {
 <<<<<<< HEAD
+<<<<<<< HEAD
   readonly currentStock: 0;
 =======
   currentStock: number;
 >>>>>>> 8822616 (dã hoàn thành apply api cho product,category và image, cũng cập nhật backend của phần account để có thể mở lại tài khoản nhưng các mục khác thì không thể mở lại được)
+=======
+  readonly currentStock: 0;
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
   status: ProductStatus;
   categoryId: string;
   price: number;
@@ -58,9 +62,12 @@ type CreateProductForm = {
 
 type UpdateProductForm = {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   currentStock?: number;
 >>>>>>> 8822616 (dã hoàn thành apply api cho product,category và image, cũng cập nhật backend của phần account để có thể mở lại tài khoản nhưng các mục khác thì không thể mở lại được)
+=======
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
   status?: ProductStatus;
   categoryId: string;
   price: number;

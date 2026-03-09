@@ -53,4 +53,8 @@ export class TagsController {
         return reActivatedProduct;
     }
 
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)

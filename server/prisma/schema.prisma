@@ -35,7 +35,7 @@ enum OrderStatus {
     Confirm
     InTransit
     Done
-    Cancled
+    Cancelled
 }
 
 enum OrderPaymentStatus {
@@ -44,6 +44,7 @@ enum OrderPaymentStatus {
 }
 
 enum PaymentType {
+    Cod
     Momo
     VNPay
     SeaPay

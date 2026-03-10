@@ -1,4 +1,4 @@
-type PaymentType = 'Momo' | 'VNPay' | 'Seapay';
+type PaymentType = 'Momo' | 'VNPay' | 'Sepay';
 
 type PaymentRep = {
     requestId: string | null,

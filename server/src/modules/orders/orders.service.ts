@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/configs/prisma-client.config';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { OrderPaymentStatus, OrderStatus } from 'prisma/generated/enums';
 
 @Injectable()
 export class OrdersService {
@@ -154,5 +155,43 @@ export class OrdersService {
         // Xử lý phát đi event để thanh toán
 
         return order;
+    }
+
+    async updateOrderStatus(id: string, status: OrderStatus) {
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: {
+                id: id,
+            },
+        });
+
+        if (!order) throw new NotFoundException(`Không có order ${id}`);
+
+        const updatedOrder = await this.prismaService.prismaClient.orders.update({
+            where: {
+                id: id,
+            },
+            data: {
+                status: status,
+            },
+        });
+    }
+
+    async updateOrderPaymentStatus(id: string, paymentStatus: OrderPaymentStatus) {
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: {
+                id: id,
+            },
+        });
+
+        if (!order) throw new NotFoundException(`Không có order ${id}`);
+
+        const updatedOrder = await this.prismaService.prismaClient.orders.update({
+            where: {
+                id: id,
+            },
+            data: {
+                paymentStatus: paymentStatus,
+            },
+        }); 
     }
 }

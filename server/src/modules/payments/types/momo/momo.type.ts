@@ -41,3 +41,19 @@ export type MomoRequireOtps = {
         email: string
     }
 }
+
+export type MomoIpnCallBack = {
+    partnerCode: string,
+    orderId: string,
+    requestId: string,
+    amount: number,
+    orderInfo: string,
+    orderType: "momo_wallet",
+    transId: number,
+    resultCode: number,
+    message: string,
+    payType: string,
+    responseTime: number,
+    extraData: string,
+    signature: string
+}

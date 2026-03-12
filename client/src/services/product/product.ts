@@ -1,4 +1,4 @@
-import { api } from "../../api/api";
+import { api } from "../../lib/api/api";
 import type { ProductRep } from "./product.type";
 
 export const getAllProducts = async (page: number = 0, pageSize: number = 10) => {

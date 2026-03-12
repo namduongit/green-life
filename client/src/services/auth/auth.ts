@@ -1,4 +1,4 @@
-import { api } from "../../api/api"
+import { api } from "../../lib/api/api"
 import type { LoginRep } from "./auth.type";
 
 export const login = async (loginForm: { email: string, password: string}) => {

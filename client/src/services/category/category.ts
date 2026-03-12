@@ -1,4 +1,4 @@
-import { api } from "../../api/api";
+import { api } from "../../lib/api/api";
 import type { CategoryRep } from "./category.type";
 
 export const getAllCategories = async () => {

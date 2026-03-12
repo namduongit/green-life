@@ -1,4 +1,4 @@
-import { api } from "../../api/api";
+import { api } from "../../lib/api/api";
 import type { TagRep } from "./tag.type";
 
 export const getAllTags = async () => {

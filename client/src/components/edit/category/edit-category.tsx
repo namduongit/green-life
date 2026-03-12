@@ -46,7 +46,6 @@ const EditCategory = ({ category, onClose, onUpdated }: Props) => {
 
         const payload = {
             name,
-            slug: generatedSlug,
             status
         };
 
@@ -56,7 +55,6 @@ const EditCategory = ({ category, onClose, onUpdated }: Props) => {
             onUpdated({
                 ...category,
                 name,
-                slug: generatedSlug,
                 status
             });
 

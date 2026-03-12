@@ -12,7 +12,7 @@ export const getTagsPagination = async (page: number, limit: number) => {
 };
 
 export const getTagById = async (id: string) => {
-    const response = await api.get<TagRep[]>(`/api/tags/by-id/${id}`);
+    const response = await api.get<TagRep>(`/api/tags/by-id/${id}`);
     return response;
 };
 

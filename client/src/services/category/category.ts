@@ -12,7 +12,7 @@ export const getCategoriesPagination = async (page: number, limit: number) => {
 };
 
 export const getCategoryById = async (id: string) => {
-    const response = await api.get<CategoryRep[]>(`/api/categories/by-id/${id}`);
+    const response = await api.get<CategoryRep>(`/api/categories/by-id/${id}`);
     return response;
 };
 

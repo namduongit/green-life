@@ -154,6 +154,7 @@ export class CategoriesService {
             where: { id },
             data: {
                 name: body.name,
+                slug: body.name ? toSlug(body.name) : undefined,
                 status: body.status,
             },
         });

@@ -18,10 +18,14 @@ export const getCategoriesPagination = async (page: number, limit: number) => {
 
 export const getCategoryById = async (id: string) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
     const response = await api.get<CategoryRep>(`/api/categories/by-id/${id}`);
 =======
     const response = await api.get<CategoryRep[]>(`/api/categories/by-id/${id}`);
 >>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
+=======
+    const response = await api.get<CategoryRep>(`/api/categories/by-id/${id}`);
+>>>>>>> 7c94ab5 (sửa lại các type cho getID của tag và category, fix lại edit category vì slug bị mismatch với backend và fix lại backend để nó có thể update slug)
     return response;
 };
 
@@ -48,8 +52,4 @@ export const softDeleteCategory = async (id: string) => {
 export const reActivateCategory = async (id: string) => {
     const response = await api.patch<CategoryRep>(`/api/categories/${id}/activate`);
     return response;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)

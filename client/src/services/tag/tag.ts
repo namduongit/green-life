@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 
 import { api } from "../../lib/api/api";
-=======
-import { api } from "../../api/api";
->>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
 import type { TagRep } from "./tag.type";
 
 export const getAllTags = async () => {
@@ -17,11 +13,7 @@ export const getTagsPagination = async (page: number, limit: number) => {
 };
 
 export const getTagById = async (id: string) => {
-<<<<<<< HEAD
     const response = await api.get<TagRep>(`/api/tags/by-id/${id}`);
-=======
-    const response = await api.get<TagRep[]>(`/api/tags/by-id/${id}`);
->>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
     return response;
 };
 
@@ -48,8 +40,4 @@ export const softDeleteTag = async (id: string) => {
 export const reActivateTag = async (id: string) => {
     const response = await api.patch<TagRep>(`/api/tags/${id}/activate`);
     return response;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)

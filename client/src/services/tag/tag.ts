@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7b9307e (sửa lại vài cái con copilot trên github kêu sửa)
 import { api } from "../../lib/api/api";
 import type { TagRep } from "./tag.type";
 

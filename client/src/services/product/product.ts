@@ -7,7 +7,7 @@ export const getAllProducts = async (page: number = 0, pageSize: number = 10) =>
 };
 
 export const getProductById = async (id: string) => {
-    const response = await api.get<ProductRep[]>(`/api/products/${id}`);
+    const response = await api.get<ProductRep>(`/api/products/${id}`);
     return response;
 };
 

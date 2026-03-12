@@ -1,73 +1,50 @@
 import { api } from "../../lib/api/api";
-import type { CommonStatus } from "../../lib/types/enums.typs";
-import type {
-    CreateProductForm,
-    GetProductRep,
-    QueryGetProducts,
-} from "./product.type";
+import type { ProductRep } from "./product.type";
 
-export const getAllProducts = async (query: QueryGetProducts) => {
-    const response = await api.get<GetProductRep[]>(`/api/products`, {
-        params: query,
-    });
-    return response.data;
+export const getAllProducts = async (page: number = 0, pageSize: number = 10) => {
+    const response = await api.get<ProductRep[]>("/api/products?" + new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() }).toString());
+    return response;
 };
 
 export const getProductById = async (id: string) => {
-    const response = await api.get<GetProductRep>(`/api/products/${id}`);
-    return response.data;
+    const response = await api.get<ProductRep>(`/api/products/${id}`);
+    return response;
 };
 
-export const createProduct = async (formData: CreateProductForm) => {
-    const response = await api.post<GetProductRep>("/api/products", formData);
-    return response.data;
+export const createProduct = async (body: any) => {
+    const response = await api.post<ProductRep>("/api/products", body);
+    return response;
 };
 
-export const updateProductStock = async (id: string, stock: number) => {
-    const response = await api.put<GetProductRep>(`/api/products/${id}/stock`, {
-        stock,
+
+export const updateStatus = async (id: string, status: string) => {
+    const response = await api.patch<ProductRep>(`/api/products/${id}/status`, { status });
+    return response;
+};
+
+export const updateTags = async (id: string, tags: string[]) => {
+    return api.patch<ProductRep[]>(`/api/products/${id}/tags`, {
+        tags
     });
-    return response.data;
 };
 
-export const updateProductStatus = async (id: string, status: CommonStatus) => {
-    const response = await api.put<GetProductRep>(
-        `/api/products/${id}/status`,
-        {
-            status: status,
-        },
-    );
-    return response.data;
+export const updateProperty = async (id: string, property: any) => {
+    return api.patch<ProductRep>(`/api/products/${id}/property`, property);
 };
 
-export const updateProductTags = async (id: string, tagIds: string[]) => {
-    const response = await api.put<GetProductRep>(`/api/products/${id}/tags`, {
-        tagIds,
+export const updateCategory = async (id: string, categoryId: string) => {
+    const response = await api.patch<ProductRep>(`/api/products/${id}/category`, {
+        category: { id: categoryId }
     });
-    return response.data;
+    return response;
 };
 
-export const updateProductProperty = async (
-    id: string,
-    property: GetProductRep["property"],
-) => {
-    const response = await api.put<GetProductRep>(
-        `/api/products/${id}/property`,
-        {
-            property,
-        },
-    );
-    return response.data;
+export const deleteProduct = async (id: string) => {
+    const response = await api.delete<ProductRep>(`/api/products/${id}`);
+    return response;
 };
 
-export const updateProductCategory = async (id: string, categoryId: string) => {
-    const response = await api.put<GetProductRep>(
-        `/api/products/${id}/category`,
-        {
-            category: {
-                id: categoryId,
-            },
-        },
-    );
-    return response.data;
-};
+export const reActivateProduct = async (id: string) => {
+    const response = await api.patch<ProductRep>(`/api/products/${id}/activate`);
+    return response;
+}

@@ -1,19 +1,8 @@
-import { api } from "../../lib/api/api";
-import type {
-    AccountRep,
-    AddressForm,
-    AddressRep,
-    AddToCartForm,
-    CartItemRep,
-    CreateAccountForm,
-    SearchAccountParams,
-    UpdateAccountForm,
-} from "./account.type";
+import { api } from "../../lib/api/api"
+import type {AccountRep, AddressForm, AddressRep, AddToCartForm, CartItemRep, CreateAccountForm, UpdateAccountForm } from "./account.type";
 
-export const getAllAccounts = async (search: SearchAccountParams) => {
-    const response = await api.get<AccountRep[]>("/api/users", {
-        params: search,
-    });
+export const getAllAccounts = async () => {
+    const response = await api.get<AccountRep[]>("/api/users");
     return response;
 };
 
@@ -23,26 +12,22 @@ export const getAccountById = async (id: string) => {
 };
 
 export const createAccount = async (createAccountForm: CreateAccountForm) => {
-    const response = await api.post<AccountRep>(
-        "/api/users",
-        createAccountForm,
-    );
+    const response = await api.post<AccountRep>("/api/users", createAccountForm);
     return response;
 };
 
-export const updateAccount = async (
-    id: string,
-    updateAccountForm: UpdateAccountForm,
-) => {
-    const response = await api.put<AccountRep>(
-        `/api/users/${id}`,
-        updateAccountForm,
-    );
+export const updateAccount = async (id: string, updateAccountForm: UpdateAccountForm) => {
+    const response = await api.put<AccountRep>(`/api/users/${id}`, updateAccountForm);
     return response;
 };
 
-export const deleteAccount = async (id: string) => {
+export const deActivateAccount = async (id: string) => {
     const response = await api.delete<AccountRep>(`/api/users/${id}`);
+    return response;
+}
+
+export const activateAccount = async (id: string) => {
+    const response = await api.patch<AccountRep>(`/api/users/${id}/activate`);
     return response;
 };
 
@@ -89,7 +74,7 @@ export const addToCart = async (
     userId: string,
     addToCartForm: AddToCartForm,
 ) => {
-    const response = await api.post<CartRep>(
+    const response = await api.post<CartItemRep>(
         `/api/users/${userId}/cart`,
         addToCartForm,
     );

@@ -1,5 +1,5 @@
-import { api } from "../../api/api"
-import type {AccountRep, AddressForm, AddressRep, AddToCartForm, CartRep, CreateAccountForm, UpdateAccountForm } from "./account.type";
+import { api } from "../../lib/api/api"
+import type {AccountRep, AddressForm, AddressRep, AddToCartForm, CartItemRep, CreateAccountForm, UpdateAccountForm } from "./account.type";
 
 export const getAllAccounts = async () => {
     const response = await api.get<AccountRep[]>("/api/users");
@@ -7,7 +7,7 @@ export const getAllAccounts = async () => {
 };
 
 export const getAccountById = async (id: string) => {
-    const response = await api.get<AccountRep[]>(`/api/users/${id}`);
+    const response = await api.get<AccountRep>(`/api/users/${id}`);
     return response;
 };
 
@@ -74,7 +74,7 @@ export const addToCart = async (
     userId: string,
     addToCartForm: AddToCartForm,
 ) => {
-    const response = await api.post<CartRep>(
+    const response = await api.post<CartItemRep>(
         `/api/users/${userId}/cart`,
         addToCartForm,
     );

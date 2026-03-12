@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { api } from "../../lib/api/api";
-=======
-import { api } from "../../api/api";
->>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)
 import type { ProductRep } from "./product.type";
 
 export const getAllProducts = async (page: number = 0, pageSize: number = 10) => {
@@ -47,11 +43,8 @@ export const deleteProduct = async (id: string) => {
     const response = await api.delete<ProductRep>(`/api/products/${id}`);
     return response;
 };
-<<<<<<< HEAD
-=======
 
 export const reActivateProduct = async (id: string) => {
     const response = await api.patch<ProductRep>(`/api/products/${id}/activate`);
     return response;
 }
->>>>>>> f69e5af (Them type, dùng query, thêm chức năng mở khoá, fix lại UI cho chức năng thêm sản phẩm, lưu ý là phải xem lại phân trang cho phần product)

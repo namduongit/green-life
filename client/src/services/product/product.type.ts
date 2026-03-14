@@ -15,16 +15,16 @@ export type GetProductRep = Omit<Product, "createdAt" | "updatedAt"> & {
 };
 
 export type QueryGetProducts = {
-    id: string;
-    "property.id": string;
-    "property.id_in": string;
-    "property.name_contains": string;
-    "category.id": string;
-    page: string;
-    order: string;
-    pageSize: string;
-    "tagItems.some.tag.id": string;
-    "property.description_contains": string;
+    id?: string;
+    "property.id"?: string;
+    "property.id_in"?: string;
+    "property.name_contains"?: string;
+    "category.id"?: string;
+    page?: string;
+    order?: string;
+    pageSize?: string;
+    "tagItems.some.tag.id"?: string;
+    "property.description_contains"?: string;
 };
 
 export type CreateProductForm = {

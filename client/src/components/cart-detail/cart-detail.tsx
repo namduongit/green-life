@@ -1,21 +1,9 @@
-type CartItem = {
-    id: string,
-    name: string,
-    productId: string,
-    quantity: number,
-    price: number
-}
-
-type CartDetail = {
-    
-}
-
 const CartDetail = ({ isShowCartDetail, setIsShowCardDetail }: { isShowCartDetail: boolean, setIsShowCardDetail: (v: boolean) => void }) => {
     if (!isShowCartDetail) return;
 
     return (
-        <div className="absolute top-0 left-0 w-full h-screen bg-gray-800/60">
-            <div className="w-full sm:w-85 h-screen bg-white ms-auto flex flex-col">
+        <div className="fixed z-30 top-0 left-0 w-full h-screen bg-gray-800/60" onClick={() => setIsShowCardDetail(false)}>
+            <div className="w-full sm:w-85 h-screen bg-white ms-auto flex flex-col" onClick={(event) => event.stopPropagation()}>
                 <div className="flex justify-between items-center py-4 px-5 border-b border-gray-300">
                     <h1 className="text-green-700 text-xl font-semibold">Giỏ hàng</h1>
                     <div className="flex items-center gap-1 text-md text-gray-600">

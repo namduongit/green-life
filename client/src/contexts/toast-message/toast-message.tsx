@@ -60,28 +60,30 @@ const ToastMessageProvider = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <ToastMessageContext.Provider value={{ showToast, showErrorResponse }}>
-            <div className="fixed top-5 end-5 w-60 h-15 space-y-2 z-100">
-                {toasts && toasts.map((toast, idx) => (
-                    <div key={idx} className={`flex items-center ${getBackgroundColor(toast.type)} 
-                        left-to-right shadow px-3 py-3 gap-2 border-s-4 ${getBorderColor(toast.type)}`}>
-                        <div>
-                            <div className={`w-4 h-4 rounded-full border-4 ${getBorderColor(toast.type)}`}></div>
-                        </div>
-                        <div className={`flex-1 ${getTextColor(toast.type)}`}>
-                            <div className="flex justify-between">
-                                <h1 className="font-semibold text-lg">
-                                    {toast.type === "Success" && "Thành công"}
-                                    {toast.type === "Fail" && "Thất bại"}
-                                    {toast.type === "Error" && "Lỗi"}
-                                    {toast.type === "Note" && "Thông báo"}
-                                </h1>
-                                <button className="text-gray-500" onClick={() => closeToast(toast.id)}>x</button>
+            {toasts.length > 0 && (
+                <div className="fixed top-5 end-5 w-60 h-15 space-y-2 z-100">
+                    {toasts.map((toast, idx) => (
+                        <div key={idx} className={`flex items-center ${getBackgroundColor(toast.type)} 
+                            left-to-right shadow px-3 py-3 gap-2 border-s-4 ${getBorderColor(toast.type)}`}>
+                            <div>
+                                <div className={`w-4 h-4 rounded-full border-4 ${getBorderColor(toast.type)}`}></div>
                             </div>
-                            <p className="text-sm">{toast.message}</p>
+                            <div className={`flex-1 ${getTextColor(toast.type)}`}>
+                                <div className="flex justify-between">
+                                    <h1 className="font-semibold text-lg">
+                                        {toast.type === "Success" && "Thành công"}
+                                        {toast.type === "Fail" && "Thất bại"}
+                                        {toast.type === "Error" && "Lỗi"}
+                                        {toast.type === "Note" && "Thông báo"}
+                                    </h1>
+                                    <button className="text-gray-500" onClick={() => closeToast(toast.id)}>x</button>
+                                </div>
+                                <p className="text-sm">{toast.message}</p>
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {children}
         </ToastMessageContext.Provider>

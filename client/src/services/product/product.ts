@@ -10,7 +10,7 @@ export const getAllProducts = async (query: QueryGetProducts) => {
     const response = await api.get<GetProductRep[]>(`/api/products`, {
         params: query,
     });
-    return response.data;
+    return response;
 };
 
 export const getProductById = async (id: string) => {

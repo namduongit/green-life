@@ -1,3 +1,4 @@
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/configs/prisma-client.config';
 import { SearchParamsQuery } from 'prisma-searchparams-mapper';
@@ -119,13 +120,24 @@ export class ProductsService {
         return createdProduct;
     }
 
-    async deleteProduct(id: string): Promise<void> {
+    async deleteProduct(id: string){
         await this.prismaService.prismaClient.products.update({
             where: {
                 id,
             },
             data: {
                 isDelete: true,
+            },
+        });
+    }
+
+    async reActivate(id: string){
+        await this.prismaService.prismaClient.products.update({
+            where: {
+                id,
+            },
+            data: {
+                isDelete: false,
             },
         });
     }

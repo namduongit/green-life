@@ -10,9 +10,9 @@ export class CategoriesService {
 
     async getCategories() {
         const result = await this.prismaService.prismaClient.categories.findMany({
-            where: {
-                isDelete: false,
-            },
+            // where: {
+            //     isDelete: false,
+            // },
             orderBy: {
                 createdAt: 'desc',
             },
@@ -154,6 +154,7 @@ export class CategoriesService {
             where: { id },
             data: {
                 name: body.name,
+                slug: body.name ? toSlug(body.name) : undefined,
                 status: body.status,
             },
         });
@@ -183,4 +184,29 @@ export class CategoriesService {
 
         return deletedCategory;
     }
+
+    async reActivate(id: string) {
+        const category = await this.prismaService.prismaClient.categories.findUnique({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('Không tìm thấy danh mục');
+        }
+
+        if (!category.isDelete) {
+            throw new BadRequestException('Danh mục này đang được kích hoạt');
+        }
+
+        const reActivatedCategory = await this.prismaService.prismaClient.categories.update({
+            where: { id },
+            data: {
+                isDelete: false,
+            },
+        });
+
+        return reActivatedCategory;
+    }
+
+
 }

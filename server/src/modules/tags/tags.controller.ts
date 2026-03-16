@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Patch } from '@nestjs/common';
 import { TagsService } from './tags.service';
 
 @Controller('/api/tags')
 export class TagsController {
-    constructor(private tagsService: TagsService) {}
+    constructor(private tagsService: TagsService) { }
 
     @Get()
     async getAll() {
@@ -46,4 +46,11 @@ export class TagsController {
         const result = await this.tagsService.softDeleteTag(id);
         return result;
     }
+
+    @Patch('/:id/activate')
+    async reActivateTag(@Param('id') id: string) {
+        const reActivatedProduct = await this.tagsService.reActivateTag(id);
+        return reActivatedProduct;
+    }
+
 }

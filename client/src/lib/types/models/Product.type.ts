@@ -1,4 +1,4 @@
-import type { CommonStatus, Role } from "../enums.typs";
+import type { CommonStatus, Role, Unit } from "../enums.typs";
 
 export type Product = {
     id: string;
@@ -17,7 +17,7 @@ export type ProductProperty = {
     name: string;
     description: string;
     weight: string;
-    unit: Role;
+    unit: Unit;
     length: number;
     width: number;
     height: number;

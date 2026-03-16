@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Patch } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 
 @Controller('/api/categories')
 export class CategoriesController {
-    constructor(private categoriesService: CategoriesService) {}
+    constructor(private categoriesService: CategoriesService) { }
 
     @Get()
     async getAll() {
@@ -46,4 +46,11 @@ export class CategoriesController {
         const result = await this.categoriesService.softDeleteCategory(id);
         return result;
     }
+
+
+    @Patch(':id/activate')
+    activateCategory(@Param('id') id: string) {
+        return this.categoriesService.reActivate(id);
+    }
+
 }

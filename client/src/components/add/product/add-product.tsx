@@ -190,9 +190,6 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
         } else if (res?.data) {
             showToast("Success", "Tạo sản phẩm thành công!");
             onProductAdded?.(res.data as ProductRep);
-            setTimeout(() => {
-                onClose?.();
-            }, 500);
         }
     };
 

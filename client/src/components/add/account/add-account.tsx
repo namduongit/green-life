@@ -29,9 +29,6 @@ const AddAccount = ({ onAccountAdded, onClose }: AddAccountProps) => {
             onAccountAdded?.(result.data);
             // Reset form
             setAccountForm({ email: "", password: "", role: "User" });
-            setTimeout(() => {
-                onClose?.();
-            }, 500);
         }
     }
 

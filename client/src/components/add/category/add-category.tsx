@@ -54,10 +54,6 @@ const AddCategory = ({ onCategoryAdded, onClose }: AddCategoryProps) => {
         slug: "",
         status: "",
       });
-
-      setTimeout(() => {
-        onClose?.();
-      }, 500);
     }
   };
 

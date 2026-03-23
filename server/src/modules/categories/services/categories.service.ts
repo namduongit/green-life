@@ -1,0 +1,218 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from 'src/configs/prisma-client.config';
+import { CommonStatus } from 'prisma/generated/client';
+import { toSlug } from 'src/utils/toSlug.utils';
+import { CreateCategoryDto, UpdateCategoryDto } from '../dto/requests/request.dto';
+import { CategoryPaginationResponseDto, CategoryResponseDto } from '../dto/responses/response.dto';
+
+@Injectable()
+export class CategoriesService {
+    constructor(private prismaService: PrismaService) {}
+
+    async getCategories(): Promise<CategoryResponseDto[]> {
+        const result = await this.prismaService.prismaClient.categories.findMany({
+            // where: {
+            //     isDelete: false,
+            // },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+        return result;
+    }
+
+    async getCategoriesPagination(page: number, limit: number): Promise<CategoryPaginationResponseDto> {
+        if (page < 1 || limit < 1) {
+            throw new BadRequestException('Số trang và số lượng phải lớn hơn 0');
+        }
+
+        const skip = (page - 1) * limit;
+
+        const [categories, total] = await Promise.all([
+            this.prismaService.prismaClient.categories.findMany({
+                where: {
+                    isDelete: false,
+                },
+                skip,
+                take: limit,
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            }),
+            this.prismaService.prismaClient.categories.count({
+                where: {
+                    isDelete: false,
+                },
+            }),
+        ]);
+
+        return {
+            data: categories,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
+    async getCategoryById(id: string): Promise<CategoryResponseDto> {
+        const category = await this.prismaService.prismaClient.categories.findUnique({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('Không tìm thấy danh mục');
+        }
+
+        if (category.isDelete) {
+            throw new NotFoundException('Không thể lấy danh mục bị xóa');
+        }
+
+        return category;
+    }
+
+    async searchCategories(conditions: { name?: string; status?: 'Active' | 'UnActive' | 'Other' }): Promise<CategoryResponseDto[]>  {
+        const where: any = {
+            isDelete: false,
+        };
+
+        if (conditions.name) {
+            where.name = {
+                $regex: conditions.name,
+                $options: 'i', // Case insensitive
+            };
+        }
+
+        if (conditions.status) {
+            where.status = conditions.status;
+        }
+
+        const result = await this.prismaService.prismaClient.categories.findMany({
+            where,
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+
+        return result;
+    }
+
+    async createCategory(body: CreateCategoryDto): Promise<CategoryResponseDto> {
+        const existingCategory = await this.prismaService.prismaClient.categories.findFirst({
+            where: {
+                name: body.name,
+                isDelete: false,
+            },
+        });
+
+        console.log('Existing category: ', existingCategory);
+
+        if (existingCategory) {
+            throw new BadRequestException('Tên của danh mục này đã tồn tại');
+        }
+
+        const newCategory = await this.prismaService.prismaClient.categories.create({
+            data: {
+                name: body.name,
+                status: (body.status as CommonStatus) ?? CommonStatus.Active,
+                slug: toSlug(body.name),
+            },
+        });
+
+        return newCategory;
+    }
+
+    async updateCategory(id: string, body: UpdateCategoryDto): Promise<CategoryResponseDto> {
+        const category = await this.prismaService.prismaClient.categories.findUnique({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('Không tìm thấy danh mục');
+        }
+
+        if (category.isDelete) {
+            throw new BadRequestException('Không thể cập nhật danh mục bị xóa');
+        }
+
+        if (body.name && body.name !== category.name) {
+            const existingCategory = await this.prismaService.prismaClient.categories.findFirst({
+                where: {
+                    name: body.name,
+                    isDelete: false,
+                    id: { not: id },
+                },
+            });
+
+            if (existingCategory) {
+                throw new BadRequestException('Tên danh mục này đã được sử dụng');
+            }
+        }
+
+        const data : any = {};
+        if (body.name) {
+            data.name = body.name;
+            data.slug = toSlug(body.name);
+        }
+        if (body.status) {
+            data.status = body.status;
+        }
+
+        const updatedCategory = await this.prismaService.prismaClient.categories.update({
+            where: { id },
+            data: data,
+        });
+
+        return updatedCategory;
+    }
+
+    async softDeleteCategory(id: string): Promise<CategoryResponseDto> {
+        const category = await this.prismaService.prismaClient.categories.findUnique({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('Không tìm thấy danh mục');
+        }
+
+        if (category.isDelete) {
+            throw new BadRequestException('Danh mục này đã được xóa');
+        }
+
+        const deletedCategory = await this.prismaService.prismaClient.categories.update({
+            where: { id },
+            data: {
+                isDelete: true,
+            },
+        });
+
+        return deletedCategory;
+    }
+
+    async reActivate(id: string) {
+        const category = await this.prismaService.prismaClient.categories.findUnique({
+            where: { id },
+        });
+
+        if (!category) {
+            throw new NotFoundException('Không tìm thấy danh mục');
+        }
+
+        if (!category.isDelete) {
+            throw new BadRequestException('Danh mục này đang được kích hoạt');
+        }
+
+        const reActivatedCategory = await this.prismaService.prismaClient.categories.update({
+            where: { id },
+            data: {
+                isDelete: false,
+            },
+        });
+
+        return reActivatedCategory;
+    }
+
+
+}

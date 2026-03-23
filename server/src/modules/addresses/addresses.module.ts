@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AddressesService } from './addresses.service';
+import { AddressesService } from './services/addresses.service';
 import { CommonModule } from '../common.module';
 
 @Module({

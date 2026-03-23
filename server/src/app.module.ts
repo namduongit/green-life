@@ -1,12 +1,15 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { AuthModule } from './modules/auth/auth.module';
-import { CategoriesController } from './modules/categories/categories.controller';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { AccountsModule } from './modules/accounts/accounts.module';
+import { AuthorizeMiddleware } from './middleware/authorize.middleware';
+import { JwtModule } from '@nestjs/jwt';
+import { JsonWtConstants } from './constants/jsonwt.constants';
+import { OrdersModule } from './modules/orders/orders.module';
 
 /**
  * Explain:
@@ -21,11 +24,19 @@ import { AccountsModule } from './modules/accounts/accounts.module';
 
 @Module({
     imports: [
+        JwtModule.register({
+            global: true,
+            secret: JsonWtConstants.secret,
+            signOptions: {
+                expiresIn: JsonWtConstants.expiresIn,
+            },
+        }),
         AuthModule,
         TagsModule,
         CategoriesModule,
         ProductsModule,
         AccountsModule,
+        OrdersModule,
         /** Payment */
         PaymentsModule,
     ],
@@ -34,8 +45,13 @@ import { AccountsModule } from './modules/accounts/accounts.module';
     // Export utility provider (public)
     exports: [],
 })
-export class AppModule {
+export class AppModule implements NestModule {
     // configure(consumer: MiddlewareConsumer) {
     //     consumer.apply(LoggerMiddleware).forRoutes(CategoriesController);
     // }
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(LoggerMiddleware).forRoutes('*');
+        consumer.apply(AuthorizeMiddleware).forRoutes('/api/users/:id/cart');
+        consumer.apply(AuthorizeMiddleware).forRoutes('/api/orders');
+    }
 }

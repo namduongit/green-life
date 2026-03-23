@@ -18,7 +18,6 @@ export const useExecute = () => {
             setLoading(true);
 
             const result = await promiseFunc;
-            console.log(result)
             if (result.data) {
                 setLoading(false);
                 return {

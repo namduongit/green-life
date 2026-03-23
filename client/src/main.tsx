@@ -12,14 +12,19 @@ import AdminDashboard from './pages/admin-page/dashboard/dashboard'
 import AdminLayout from './pages/admin-page/layout'
 import AdminAccount from './pages/admin-page/account/account'
 import { AuthProvider } from './contexts/auth/auth'
+import { CardProvider } from './contexts/cart/cart'
 import ProductPage from './pages/product/product'
+import CheckoutPage from './pages/checkout/checkout'
+import InfoPage from './pages/info/info'
+import OrderPage from './pages/order/order'
 
 createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <ModalConfirmProvider>
         <ToastMessageProvider>
           <AuthProvider>
-          <Routes>
+            <CardProvider>
+              <Routes>
 
             <Route path='/' element={<Layout />}>
               {/* Home page */}
@@ -31,6 +36,9 @@ createRoot(document.getElementById('root')!).render(
               {/* Feature service page */}
               <Route path='/page/product' element={<ProductPage />} />
               <Route path='/page/cart' element={<CartPage />} />
+              <Route path='/page/checkout' element={<CheckoutPage />} />
+              <Route path='/page/info' element={<InfoPage />} />
+              <Route path='/page/order' element={<OrderPage />} />
               <Route path='/page/payment' element={<PaymentPage />} />
             </Route>
 
@@ -41,7 +49,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path='/admin/accounts' element={<AdminAccount />} />
             </Route>
 
-          </Routes>
+              </Routes>
+            </CardProvider>
           </AuthProvider>
         </ToastMessageProvider>
       </ModalConfirmProvider>

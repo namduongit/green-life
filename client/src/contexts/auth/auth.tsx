@@ -1,43 +1,45 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { LoginRep } from "../../services/auth";
 
-const AuthContext = createContext<{
-    saveStateAuth: (res: LoginRep) => void
-}>({
-    saveStateAuth: () => { }
-});
+type AuthContextValue = {
+    saveStateAuth: (res: LoginRep) => void;
+    clearStateAuth: () => void;
+    state: LoginRep | null;
+    };
 
-const AuthProvider = ({ children }: { children: React.ReactNode}) => {
-    const [uuid, setUuid] = useState<string>();
-    const [email, setEmail] = useState<string>();
-    const [accessToken, setAccessToken] = useState<string>();
-    const [time, setTime] = useState<{
-        issuedAt: number,
-        expiresAt: number
-    }>();
+    const AuthContext = createContext<AuthContextValue>({
+        saveStateAuth: () => { },
+        clearStateAuth: () => { },
+        state: null,
+    });
 
-    const saveStateAuth = (res: LoginRep) => {
-        setUuid(res.uid);
-        setEmail(res.email);
-        setAccessToken(res.accessToken);
-        setTime(res.time);
+    const AuthProvider = ({ children }: { children: React.ReactNode}) => {
+        const [state, setState] = useState<LoginRep | null>(null);
 
-        window.localStorage.setItem("STATE_USER", JSON.stringify(res));
-    }
+        const saveStateAuth = (res: LoginRep) => {
+            setState(res);
+            window.localStorage.setItem("STATE_USER", JSON.stringify(res));
+        }
+
+        const clearStateAuth = () => {
+            setState(null);
+            window.localStorage.removeItem("STATE_USER");
+        };
 
     useEffect(() => {
         const stateLocal = window.localStorage.getItem("STATE_USER");
         if (stateLocal) {
-            const stateUser = JSON.parse(stateLocal);
-            setUuid(stateUser.uid);
-            setEmail(stateUser.email);
-            setAccessToken(stateUser.accessToken);
-            setTime(stateUser.time);
+            try {
+                const stateUser: LoginRep = JSON.parse(stateLocal);
+                setState(stateUser);
+            } catch {
+                window.localStorage.removeItem("STATE_USER");
+            }
         }
     }, [])
 
     return (
-        <AuthContext.Provider value={{saveStateAuth}}>
+        <AuthContext.Provider value={{saveStateAuth, clearStateAuth, state }}>
 
             {children}
         </AuthContext.Provider>

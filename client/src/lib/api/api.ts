@@ -8,19 +8,13 @@ const api = axios.create({
 
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    const stored = localStorage.getItem("CURRENT_ACCOUNT");
+    const stored = localStorage.getItem("STATE_USER");
     if (stored) {
-        /* Load token from LocalStorage */
-
-        // const parsed: AuthState = JSON.parse(stored) || {};
-        // if (parsed) {
-        //     if (parsed.accessToken) {
-        //         config.headers.Authorization = `Bearer ${parsed.accessToken}`;
-        //     }
-        // }
-        // return config;
+        const parsed = JSON.parse(stored);
+        if (parsed.accessToken) {
+            config.headers.Authorization = `Bearer ${parsed.accessToken}`;
+        }
     }
-    localStorage.removeItem("CURRENT_ACCOUNT");
     return config;
 });
 

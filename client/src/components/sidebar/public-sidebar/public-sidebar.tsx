@@ -61,11 +61,6 @@ const PublicSidebar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: boo
                                         return act ? "text-green-700" : ""
                                     }} to="/page/testing">KIỂM NGHIỆM</NavLink>
                                 </li>
-                                <li className="py-4 ps-5 border-b border-gray-300">
-                                    <NavLink className={({ isActive: act }) => {
-                                        return act ? "text-green-700" : ""
-                                    }} to="/page/e-catologue">E-CATOLOGUE</NavLink>
-                                </li>
                                 <li className="py-4 ps-5 border-b border-gray-300 flex items-center gap-1"
                                     onClick={() => setIsAuth(!isAuth)}
                                 >

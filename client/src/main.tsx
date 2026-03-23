@@ -23,14 +23,19 @@ import AdminTag from './pages/admin-page/tag/tag'
 import AdminCategory from './pages/admin-page/category/category'
 >>>>>>> 8822616 (dã hoàn thành apply api cho product,category và image, cũng cập nhật backend của phần account để có thể mở lại tài khoản nhưng các mục khác thì không thể mở lại được)
 import { AuthProvider } from './contexts/auth/auth'
+import { CardProvider } from './contexts/cart/cart'
 import ProductPage from './pages/product/product'
+import CheckoutPage from './pages/checkout/checkout'
+import InfoPage from './pages/info/info'
+import OrderPage from './pages/order/order'
 
 createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <ModalConfirmProvider>
         <ToastMessageProvider>
           <AuthProvider>
-          <Routes>
+            <CardProvider>
+              <Routes>
 
             <Route path='/' element={<Layout />}>
               {/* Home page */}
@@ -42,6 +47,9 @@ createRoot(document.getElementById('root')!).render(
               {/* Feature service page */}
               <Route path='/page/product' element={<ProductPage />} />
               <Route path='/page/cart' element={<CartPage />} />
+              <Route path='/page/checkout' element={<CheckoutPage />} />
+              <Route path='/page/info' element={<InfoPage />} />
+              <Route path='/page/order' element={<OrderPage />} />
               <Route path='/page/payment' element={<PaymentPage />} />
             </Route>
 
@@ -63,7 +71,8 @@ createRoot(document.getElementById('root')!).render(
 >>>>>>> 8822616 (dã hoàn thành apply api cho product,category và image, cũng cập nhật backend của phần account để có thể mở lại tài khoản nhưng các mục khác thì không thể mở lại được)
             </Route>
 
-          </Routes>
+              </Routes>
+            </CardProvider>
           </AuthProvider>
         </ToastMessageProvider>
       </ModalConfirmProvider>

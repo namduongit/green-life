@@ -9,11 +9,12 @@
  * toast)
  */
 
-type RestResponse<T> = {
+type RestResponse<TData, TMeta = undefined> = {
     statusCode: number;
     message: string;
-    data: any;
-    error: any;
+    data: TData;
+    meta?: TMeta;
+    error?: string | null;
 };
 
 

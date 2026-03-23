@@ -1,24 +1,31 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import LayerCart from "../../components/layer-cart/layer-cart";
+import { useCart } from "../../contexts/cart/cart";
 
 const CartPage = () => {
-    const items = [
-        {
-            id: "12397e6b-2c61-4906-ad6f-fa5a45bd472d",
-            productId: "d78748f9-d52f-4dbb-a78f-bb801f751515",
-            imageUrl: "https://i0.wp.com/green-life.com.vn/wp-content/uploads/2025/08/5_11zon-3.webp?resize=800%2C800&ssl=1",
-            name: "Ống Hút Cỏ Bàng GREENLIFE – Hộp 100 ống – Size 20cm",
-            quantity: 1,
-            price: 29000
-        },
-        {
-            id: "12397e6b-2c61-4906-ad6f-fa5a45bd472d",
-            productId: "d78748f9-d52f-4dbb-a78f-bb801f751515",
-            imageUrl: "https://i0.wp.com/green-life.com.vn/wp-content/uploads/2025/08/5_11zon-3.webp?resize=800%2C800&ssl=1",
-            name: "Ống Hút Cỏ Bàng GREENLIFE – Hộp 100 ống – Size 20cm",
-            quantity: 1,
-            price: 29000
+    const { cartItems, addItem, removeItem } = useCart();
+    const navigate = useNavigate();
+
+    const [totalPrice, setTotalPrice] = useState<number>(0);
+    useEffect(() => {
+        let total = 0;
+        cartItems.forEach((cartItem) => {
+            total += cartItem.quantity * cartItem.product.price;
+        });
+        setTotalPrice(total);
+    }, [cartItems]);
+
+    const handleIncrease = (productId: string) => {
+        void addItem(productId, 1);
+    };
+
+    const handleDecrease = (productId: string, currentQuantity: number) => {
+        if (currentQuantity <= 1) {
+            return;
         }
-    ]
+        void addItem(productId, -1);
+    };
 
     return (
         <div className="pb-15">
@@ -32,16 +39,49 @@ const CartPage = () => {
                         <div className="flex-1 font-semibold text-lg text-green-700">THÀNH TIỀN</div>
                     </div>
                     <div className="flex flex-col">
-                        {items.map((cartItem, idx) => (
-                            <div key={idx} className="flex gap-3 py-2
-                                border-b border-gray-300">
-                                <div className="flex-2 flex gap-2">
-                                    <img src={cartItem.imageUrl} className="w-20 aspect-square" />
-                                    <h1 className="text-[16px]">{cartItem.name}</h1>
+                        {cartItems.map((cartItem, idx) => (
+                            <div key={`${cartItem.product.id ?? cartItem.id}-${idx}`} className="flex gap-3 py-4 border-b border-gray-300">
+                                <div className="flex-2 flex gap-3">
+                                    <img src={cartItem.product.urlImage} className="w-20 aspect-square rounded-md object-cover" />
+                                    <div className="flex flex-col gap-1">
+                                        <h1 className="text-[16px] font-medium text-gray-800 line-clamp-2">{cartItem.product.name}</h1>
+                                        <button
+                                            type="button"
+                                            onClick={() => void removeItem(cartItem.product.id)}
+                                            className="w-fit text-sm text-red-600 hover:underline"
+                                        >
+                                            Xóa
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex-1">{cartItem.price} đ</div>
-                                <div className="flex-1">{cartItem.quantity}</div>
-                                <div className="flex-1">{cartItem.price * cartItem.quantity} đ</div>
+                                <div className="flex-1 font-medium text-gray-700">
+                                    {cartItem.product.price.toLocaleString("vi-VN")} đ
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDecrease(cartItem.product.id, cartItem.quantity)}
+                                            disabled={cartItem.quantity <= 1}
+                                            className="flex items-center justify-center px-2 border border-gray-300 text-lg font-semibold text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 rounded"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="min-w-8 text-center text-sm font-medium">
+                                            {cartItem.quantity}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleIncrease(cartItem.product.id)}
+                                            className="flex items-center justify-center px-2 border border-[rgb(51,102,51)] bg-[rgb(51,102,51)] text-lg font-semibold text-white transition hover:bg-[#66cc00] hover:border-[#66cc00] rounded"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 font-semibold text-green-700">
+                                    {(cartItem.product.price * cartItem.quantity).toLocaleString("vi-VN")} đ
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -66,7 +106,7 @@ const CartPage = () => {
                     <div className="border-2 border-gray-300 px-3 rounded-md">
                         <div className="flex justify-between border-b border-gray-300 py-3">
                             <h2>Tạm tính</h2>
-                            <span>68.000 đ</span>
+                            <span>{totalPrice.toLocaleString()} đ</span>
                         </div>
                         <div className="flex justify-between border-b border-gray-300 py-3">
                             <h2>VAT</h2>
@@ -74,7 +114,7 @@ const CartPage = () => {
                         </div>
                         <div className="flex justify-between py-3">
                             <h2>Tổng</h2>
-                            <span>71.400 đ</span>
+                            <span>{(totalPrice + 10000).toLocaleString()} đ</span>
                         </div>
                     </div>
                     <div className="text-gray-500">
@@ -82,7 +122,13 @@ const CartPage = () => {
                             Đảm bảo không vượt quá 3% (tối thiểu 15.000 đ) giá trị đơn hàng.</span>
                     </div>
                     <div className="flex justify-end">
-                        <button className="bg-green-700 px-3 py-2 text-white rounded hover:bg-green-800 transition-colors">TIẾN HÀNH THANH TOÁN</button>
+                        <button
+                            type="button"
+                            onClick={() => navigate("/page/checkout")}
+                            className="bg-green-700 px-3 py-2 text-white rounded hover:bg-green-800 transition-colors"
+                        >
+                            TIẾN HÀNH THANH TOÁN
+                        </button>
                     </div>
                 </div>
             </div>

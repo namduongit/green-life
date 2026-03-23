@@ -59,13 +59,6 @@ const PublicHeader = () => {
                                     Kiểm nghiệm
                                 </NavLink>
                             </li>
-                            <li>
-                                <NavLink className={({ isActive: act }) => {
-                                    return act ? "border-b-2" : ''
-                                }} to="/page/e-catologue">
-                                    E-Catologue
-                                </NavLink>
-                            </li>
                         </ul>
                     </nav>
                 </div>

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { CommonStatus, Prisma } from 'prisma/generated/client';
 import { PrismaService } from 'src/configs/prisma-client.config';
-import { CommonStatus } from 'prisma/generated/client';
 import { TagPaginationResponseDto, TagResponseDto } from '../dto/responses/response.dto';
 import { CreateTagDto, UpdateTagDto } from '../dto/requests/request.dto';
 
@@ -72,15 +72,15 @@ export class TagsService {
         return tag;
     }
 
-    async searchTags(conditions: { name?: string; status?: 'Active' | 'UnActive' | 'Other' }): Promise<TagResponseDto[]> {
-        const where: any = {
+    async searchTags(conditions: { name?: string; status?: CommonStatus }): Promise<TagResponseDto[]> {
+        const where: Prisma.TagsWhereInput = {
             isDelete: false,
         };
 
         if (conditions.name) {
             where.name = {
-                $regex: conditions.name,
-                $options: 'i', // Case insensitive
+                contains: conditions.name,
+                mode: 'insensitive',
             };
         }
 
@@ -113,7 +113,7 @@ export class TagsService {
         const newTag = await this.prismaService.prismaClient.tags.create({
             data: {
                 name: body.name,
-                status: body.status,
+                status: body.status ?? CommonStatus.Active,
             },
         });
 
@@ -147,12 +147,17 @@ export class TagsService {
             }
         }
 
+        const data: Prisma.TagsUpdateInput = {};
+        if (body.name) {
+            data.name = body.name;
+        }
+        if (body.status) {
+            data.status = body.status;
+        }
+
         const updatedTag = await this.prismaService.prismaClient.tags.update({
             where: { id },
-            data: {
-                name: body.name,
-                status: body.status,
-            },
+            data,
         });
 
         return updatedTag;

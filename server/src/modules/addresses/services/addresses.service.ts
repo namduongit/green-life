@@ -1,27 +1,31 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Addresses } from 'prisma/generated/client';
 import { PrismaService } from 'src/configs/prisma-client.config';
-import { CreateAddressDto } from '../dto/requests/create-address-dto';
-import { UpdateAddressDto } from '../dto/requests/update-address-dto';
+import { CreateAddressDto, UpdateAddressDto } from '../dto/requests/request.dto';
+import { AddressResponseDto } from '../dto/responses/address-response.dto';
 
 @Injectable()
 export class AddressesService {
     constructor(private readonly prismaService: PrismaService) {}
 
-    async getAddresses(accountId: string) {
-        return this.prismaService.prismaClient.addresses.findMany({
+    async getAddresses(accountId: string): Promise<AddressResponseDto[]> {
+        const addresses = await this.prismaService.prismaClient.addresses.findMany({
             where: { accountId },
             orderBy: { isDefault: 'desc' },
         });
+
+        return addresses.map((address) => this.toAddressResponse(address));
     }
 
-    async getAddressById(accountId: string, addressId: string) {
-        return this.ensureAddress(accountId, addressId);
+    async getAddressById(accountId: string, addressId: string): Promise<AddressResponseDto> {
+        const address = await this.ensureAddress(accountId, addressId);
+        return this.toAddressResponse(address);
     }
 
-    async createAddress(accountId: string, data: CreateAddressDto) {
+    async createAddress(accountId: string, data: CreateAddressDto): Promise<AddressResponseDto> {
         const { fullName, phone, province, ward, detail, isDefault } = data;
 
-        return this.prismaService.prismaClient.$transaction(async (prisma) => {
+        const createdAddress = await this.prismaService.prismaClient.$transaction(async (prisma) => {
             if (isDefault) {
                 await prisma.addresses.updateMany({
                     where: { accountId },
@@ -41,9 +45,11 @@ export class AddressesService {
                 },
             });
         });
+
+        return this.toAddressResponse(createdAddress);
     }
 
-    async updateAddress(accountId: string, addressId: string, data: UpdateAddressDto) {
+    async updateAddress(accountId: string, addressId: string, data: UpdateAddressDto): Promise<AddressResponseDto> {
         await this.ensureAddress(accountId, addressId);
         const payload = this.buildAddressPayload(data);
 
@@ -55,7 +61,7 @@ export class AddressesService {
             return this.getAddressById(accountId, addressId);
         }
 
-        return this.prismaService.prismaClient.$transaction(async (prisma) => {
+        const updatedAddress = await this.prismaService.prismaClient.$transaction(async (prisma) => {
             if (data.isDefault) {
                 await prisma.addresses.updateMany({
                     where: { accountId },
@@ -68,16 +74,20 @@ export class AddressesService {
                 data: payload,
             });
         });
+
+        return this.toAddressResponse(updatedAddress);
     }
 
-    async deleteAddress(accountId: string, addressId: string) {
+    async deleteAddress(accountId: string, addressId: string): Promise<AddressResponseDto> {
         await this.ensureAddress(accountId, addressId);
-        return this.prismaService.prismaClient.addresses.delete({
+        const deletedAddress = await this.prismaService.prismaClient.addresses.delete({
             where: { id: addressId },
         });
+
+        return this.toAddressResponse(deletedAddress);
     }
 
-    private async ensureAddress(accountId: string, addressId: string) {
+    private async ensureAddress(accountId: string, addressId: string): Promise<Addresses> {
         const address = await this.prismaService.prismaClient.addresses.findFirst({
             where: {
                 id: addressId,
@@ -92,8 +102,8 @@ export class AddressesService {
         return address;
     }
 
-    private buildAddressPayload(data: Partial<CreateAddressDto>) {
-        const payload: Record<string, string | boolean> = {};
+    private buildAddressPayload(data: Partial<CreateAddressDto>): Partial<CreateAddressDto> {
+        const payload: Partial<CreateAddressDto> = {};
         const { fullName, phone, province, ward, detail } = data;
 
         if (fullName !== undefined) payload.fullName = fullName;
@@ -103,5 +113,18 @@ export class AddressesService {
         if (detail !== undefined) payload.detail = detail;
 
         return payload;
+    }
+
+    private toAddressResponse(address: Addresses): AddressResponseDto {
+        return {
+            id: address.id,
+            accountId: address.accountId,
+            fullName: address.fullName,
+            phone: address.phone,
+            province: address.province,
+            ward: address.ward,
+            detail: address.detail,
+            isDefault: address.isDefault,
+        };
     }
 }

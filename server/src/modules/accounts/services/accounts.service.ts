@@ -1,18 +1,17 @@
 
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/configs/prisma-client.config';
-import { CreateUserDto } from '../dto/requests/create-account-dto';
-import { UpdateUserDto } from '../dto/requests/update-dto';
-import type { AccountRep } from '../dto/responses/account-response';
 import { SearchParamsQuery } from 'prisma-searchparams-mapper';
 import { Prisma } from 'prisma/generated/browser';
+import { AccountResponseDto } from '../dto/responses/response.dto';
+import { CreateAccountDto, UpdateAccountDto } from '../dto/requests/request.dto';
 
 @Injectable()
 export class AccountsService {
     constructor(private readonly prismaService: PrismaService) {}
     async findAll(
         query: SearchParamsQuery<Prisma.AccountsWhereInput, Prisma.AccountsOrderByWithRelationInput>,
-    ): Promise<AccountRep[]> {
+    ): Promise<AccountResponseDto[]> {
         const data = await this.prismaService.prismaClient.accounts.findMany({
             ...query,
         });
@@ -26,7 +25,7 @@ export class AccountsService {
         }));
     }
 
-    async findOne(id: string): Promise<AccountRep> {
+    async findOne(id: string): Promise<AccountResponseDto> {
         const data = await this.prismaService.prismaClient.accounts.findUnique({
             where: { id: id },
         });
@@ -45,12 +44,12 @@ export class AccountsService {
         };
     }
 
-    async create(data: CreateUserDto): Promise<AccountRep> {
+    async create(dto: CreateAccountDto): Promise<AccountResponseDto> {
         const newUser = await this.prismaService.prismaClient.accounts.create({
             data: {
-                email: data.email,
-                password: data.password,
-                role: data.role,
+                email: dto.email,
+                password: dto.password,
+                role: dto.role,
                 // NOTE: mấy má nhớ tạo cart khi tạo user nha:w
                 cart: {
                     create: {},
@@ -68,13 +67,13 @@ export class AccountsService {
         };
     }
 
-    async update(id: string, data: UpdateUserDto): Promise<AccountRep> {
+    async update(id: string, dto: UpdateAccountDto): Promise<AccountResponseDto> {
         const updatedUser = await this.prismaService.prismaClient.accounts.update({
             where: { id: id },
             data: {
-                email: data.email,
-                password: data.password,
-                role: data.role,
+                email: dto.email,
+                password: dto.password,
+                role: dto.role,
             },
         });
 
@@ -88,7 +87,7 @@ export class AccountsService {
         };
     }
 
-    async deActivate(id: string): Promise<AccountRep> {
+    async deleteUser(id: string): Promise<AccountResponseDto> {
         // soft delete implementation
         const deActivatedUser = await this.prismaService.prismaClient.accounts.update({
             where: { id: id },
@@ -106,7 +105,7 @@ export class AccountsService {
             isLock: deActivatedUser.isLock,
         };
     }
-    async activate(id: string): Promise<AccountRep> {
+    async activate(id: string): Promise<AccountResponseDto> {
         const activatedUser = await this.prismaService.prismaClient.accounts.update({
             where: {id : id},
             data: {

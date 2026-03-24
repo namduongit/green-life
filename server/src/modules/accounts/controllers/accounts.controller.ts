@@ -1,12 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { AccountsService } from '../services/accounts.service';
-import { CreateUserDto } from '../dto/requests/create-account-dto';
-import { UpdateUserDto } from '../dto/requests/update-dto';
-import { CreateAddressDto } from '../../addresses/dto/requests/create-address-dto';
-import { UpdateAddressDto } from '../../addresses/dto/requests/update-address-dto';
 import { AddressesService } from '../../addresses/services/addresses.service';
 import { CartsService } from '../../carts/services/carts.service';
-import { QueryAccountDto } from '../dto/requests/get-dto';
+import { CreateAccountDto, QueryAccountDto, UpdateAccountDto } from '../dto/requests/request.dto';
+import { CreateAddressDto, UpdateAddressDto } from 'src/modules/addresses/dto/requests/request.dto';
 
 @Controller('api/users')
 export class AccountsController {
@@ -27,12 +24,12 @@ export class AccountsController {
     }
 
     @Post()
-    create(@Body() data: CreateUserDto) {
+    create(@Body() data: CreateAccountDto) {
         return this.usersService.create(data);
     }
 
     @Put(':id')
-    update(@Param('id') id: string, @Body() data: UpdateUserDto) {
+    update(@Param('id') id: string, @Body() data: UpdateAccountDto) {
         return this.usersService.update(id, data);
     }
 

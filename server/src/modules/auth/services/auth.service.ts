@@ -23,10 +23,13 @@ export class AuthService {
             },
         });
 
-        if (existingAccount) throw new BadRequestException('Tài khoản đã tồn tại');
-        console.log(registerDto);
-        if (registerDto.password !== registerDto.passwordConfirm)
+        if (existingAccount) {
+            throw new BadRequestException('Tài khoản đã tồn tại');
+        }
+
+        if (registerDto.password !== registerDto.passwordConfirm) {
             throw new BadRequestException('Mật khẩu xác nhận không khớp');
+        }
 
         const hashedPassword = await this.bcryptUtil.hashPassword(registerDto.password);
         const newAccount = await this.prismaService.prismaClient.accounts.create({
@@ -35,7 +38,7 @@ export class AuthService {
                 password: hashedPassword,
                 cart: {
                     create: {},
-                }
+                },
             },
         });
 
@@ -77,5 +80,7 @@ export class AuthService {
         };
     }
 
-    async validate() {}
+    async validate(): Promise<void> {
+        return;
+    }
 }

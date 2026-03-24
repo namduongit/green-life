@@ -1,13 +1,14 @@
-
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/configs/prisma-client.config';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { SearchParamsQuery } from 'prisma-searchparams-mapper';
-import { ProductsOrderByWithRelationInput, ProductsWhereInput } from 'prisma/generated/models';
 import { CommonStatus } from 'prisma/generated/enums';
-import { Properties } from 'prisma/generated/client';
+import { Prisma, Properties } from 'prisma/generated/client';
+import { ProductsOrderByWithRelationInput, ProductsWhereInput } from 'prisma/generated/models';
+import { PrismaService } from 'src/configs/prisma-client.config';
+import { PaginationDto } from 'src/modules/common.dto';
 import { CreateProductDto } from '../dto/requests/request.dto';
+import { ProductListResponseDto, ProductResponseDto } from '../dto/responses/response.dto';
 
-const INCLUDE_PRODUCT_RELATIONS = {
+const PRODUCT_INCLUDE = {
     category: {
         select: {
             id: true,
@@ -15,74 +16,79 @@ const INCLUDE_PRODUCT_RELATIONS = {
         },
     },
     property: {
-        omit: {
-            createdAt: true,
-            updatedAt: true,
+        select: {
+            urlImage: true,
+            name: true,
+            description: true,
+            weight: true,
+            unit: true,
+            length: true,
+            width: true,
+            height: true,
+            price: true,
         },
     },
     tagItems: {
         select: {
             tag: {
-                omit: {
-                    createdAt: true,
-                    updatedAt: true,
-                    isDelete: true,
-                    status: true,
+                select: {
+                    id: true,
+                    name: true,
                 },
             },
         },
     },
-};
+} as const;
+
+type ProductWithRelations = Prisma.ProductsGetPayload<{
+    include: typeof PRODUCT_INCLUDE;
+}>;
 
 @Injectable()
 export class ProductsService {
     constructor(private readonly prismaService: PrismaService) {}
 
-    async getAllProducts(filter: SearchParamsQuery<ProductsWhereInput, ProductsOrderByWithRelationInput>) {
-        const products = await this.prismaService.prismaClient.products.findMany({
-            include: INCLUDE_PRODUCT_RELATIONS,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            where: filter.where,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            orderBy: filter.orderBy,
-            skip: filter.skip,
-            take: filter.take,
-        });
+    async getAllProducts(
+        filter: SearchParamsQuery<ProductsWhereInput, ProductsOrderByWithRelationInput>,
+    ): Promise<ProductListResponseDto> {
+        const where = this.buildWhereClause(filter.where);
 
-        // how to map tagItems to tags
-        const mappedProducts = products.map((product) => {
-            const { tagItems, ...rest } = product;
-            const tags = tagItems.map((tagItem) => tagItem.tag);
-            return {
-                ...rest,
-                tags,
-            };
-        });
+        const [products, total] = await Promise.all([
+            this.prismaService.prismaClient.products.findMany({
+                where,
+                orderBy: filter.orderBy,
+                skip: filter.skip,
+                take: filter.take,
+                include: PRODUCT_INCLUDE,
+            }),
+            filter.take
+                ? this.prismaService.prismaClient.products.count({ where })
+                : Promise.resolve(0),
+        ]);
 
-        return mappedProducts;
-    }
+        const data = products.map((product) => this.mapProduct(product));
+        const pagination = this.buildPagination(filter.skip, filter.take, total);
 
-    async getProductById(id: string) {
-        const product = await this.prismaService.prismaClient.products.findUnique({
-            where: {
-                id,
-            },
-            include: INCLUDE_PRODUCT_RELATIONS,
-        });
-
-        if (!product) {
-            return null;
-        }
-
-        const { tagItems, ...rest } = product;
-        const tags = tagItems.map((tagItem) => tagItem.tag);
         return {
-            ...rest,
-            tags,
+            data,
+            ...(pagination ? { pagination } : {}),
         };
     }
 
-    async createProduct(data: CreateProductDto) {
+    async getProductById(id: string): Promise<ProductResponseDto> {
+        const product = await this.prismaService.prismaClient.products.findUnique({
+            where: { id },
+            include: PRODUCT_INCLUDE,
+        });
+
+        if (!product || product.isDelete) {
+            throw new NotFoundException('Sản phẩm không tồn tại');
+        }
+
+        return this.mapProduct(product);
+    }
+
+    async createProduct(data: CreateProductDto): Promise<ProductResponseDto> {
         const newProduct = await this.prismaService.prismaClient.products.create({
             data: {
                 currentStock: data.currentStock,
@@ -111,42 +117,23 @@ export class ProductsService {
             },
         });
 
-        const createdProduct = await this.getProductById(newProduct.id);
-
-        if (!createdProduct) {
-            throw new Error('Product creation failed');
-        }
-
-        return createdProduct;
+        return this.getProductById(newProduct.id);
     }
 
-    async deleteProduct(id: string){
+    async deleteProduct(id: string): Promise<ProductResponseDto> {
         await this.prismaService.prismaClient.products.update({
-            where: {
-                id,
-            },
+            where: { id },
             data: {
                 isDelete: true,
             },
         });
+
+        return this.getProductById(id);
     }
 
-    async reActivate(id: string){
+    async changeStock(id: string, newStock: number): Promise<ProductResponseDto> {
         await this.prismaService.prismaClient.products.update({
-            where: {
-                id,
-            },
-            data: {
-                isDelete: false,
-            },
-        });
-    }
-
-    async changeStock(id: string, newStock: number) {
-        await this.prismaService.prismaClient.products.update({
-            where: {
-                id,
-            },
+            where: { id },
             data: {
                 currentStock: newStock,
             },
@@ -155,11 +142,9 @@ export class ProductsService {
         return this.getProductById(id);
     }
 
-    async updateStatus(id: string, newStatus: CommonStatus) {
+    async updateStatus(id: string, newStatus: CommonStatus): Promise<ProductResponseDto> {
         await this.prismaService.prismaClient.products.update({
-            where: {
-                id,
-            },
+            where: { id },
             data: {
                 status: newStatus,
             },
@@ -168,11 +153,9 @@ export class ProductsService {
         return this.getProductById(id);
     }
 
-    async updateCategory(id: string, categoryId: string) {
+    async updateCategory(id: string, categoryId: string): Promise<ProductResponseDto> {
         await this.prismaService.prismaClient.products.update({
-            where: {
-                id,
-            },
+            where: { id },
             data: {
                 categoryId,
             },
@@ -181,43 +164,41 @@ export class ProductsService {
         return this.getProductById(id);
     }
 
-    async updateTags(id: string, tagIds: string[]) {
+    async updateTags(id: string, tagIds: string[]): Promise<ProductResponseDto> {
         await this.prismaService.prismaClient.$transaction(async (prisma) => {
-            // First, delete existing tagItems
             await prisma.tagProducts.deleteMany({
-                where: {
-                    productId: id,
-                },
+                where: { productId: id },
             });
-            // Then, create new tagItems
-            const createTagItems = tagIds.map((tagId) => ({
-                productId: id,
-                tagId,
-            }));
+
+            if (tagIds.length === 0) {
+                return;
+            }
+
             await prisma.tagProducts.createMany({
-                data: createTagItems,
+                data: tagIds.map((tagId) => ({
+                    productId: id,
+                    tagId,
+                })),
             });
         });
 
         return this.getProductById(id);
     }
 
-    async updateProperty(id: string, propertyData: Partial<Properties>) {
+    async updateProperty(id: string, propertyData: Partial<Properties>): Promise<ProductResponseDto> {
         await this.prismaService.prismaClient.properties.upsert({
-            where: {
-                productId: id,
-            },
+            where: { productId: id },
             create: {
                 productId: id,
-                urlImage: propertyData.urlImage || '',
-                name: propertyData.name || '',
-                description: propertyData.description || '',
-                weight: propertyData.weight || '',
-                unit: propertyData.unit || 'Kilogram',
-                length: propertyData.length || 0,
-                width: propertyData.width || 0,
-                height: propertyData.height || 0,
-                price: propertyData.price || 0,
+                urlImage: propertyData.urlImage ?? '',
+                name: propertyData.name ?? '',
+                description: propertyData.description ?? '',
+                weight: propertyData.weight ?? '',
+                unit: propertyData.unit ?? 'Kilogram',
+                length: propertyData.length ?? 0,
+                width: propertyData.width ?? 0,
+                height: propertyData.height ?? 0,
+                price: propertyData.price ?? 0,
             },
             update: {
                 urlImage: propertyData.urlImage,
@@ -233,5 +214,58 @@ export class ProductsService {
         });
 
         return this.getProductById(id);
+    }
+
+    private mapProduct(product: ProductWithRelations): ProductResponseDto {
+        return {
+            id: product.id,
+            currentStock: product.currentStock,
+            status: product.status,
+            category: {
+                id: product.category.id,
+                name: product.category.name,
+            },
+            tags: product.tagItems.map((tagItem) => ({
+                id: tagItem.tag.id,
+                name: tagItem.tag.name,
+            })),
+            property: product.property
+                ? {
+                      urlImage: product.property.urlImage,
+                      name: product.property.name,
+                      description: product.property.description,
+                      weight: product.property.weight,
+                      unit: product.property.unit,
+                      length: product.property.length,
+                      width: product.property.width,
+                      height: product.property.height,
+                      price: product.property.price,
+                  }
+                : undefined,
+            isDelete: product.isDelete,
+        };
+    }
+
+    private buildWhereClause(filter?: ProductsWhereInput): ProductsWhereInput {
+        if (!filter) {
+            return { isDelete: false };
+        }
+
+        return {
+            AND: [{ isDelete: false }, filter],
+        };
+    }
+
+    private buildPagination(skip = 0, take = 0, total = 0): PaginationDto | undefined {
+        if (!take || take <= 0) {
+            return undefined;
+        }
+
+        return {
+            page: Math.floor((skip ?? 0) / take) + 1,
+            limit: take,
+            total,
+            totalPages: Math.ceil(total / take),
+        };
     }
 }

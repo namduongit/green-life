@@ -1,4 +1,4 @@
-export type MomoCreateRep = {
+export class MomoCreateResponseDto {
   partnerCode: string;
   orderId: string;
   requestId: string;

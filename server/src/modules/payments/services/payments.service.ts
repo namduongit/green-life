@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CryptoUtils } from 'src/utils/crypto.utils';
 import { MomoConstants } from 'src/constants/momo.constants';
-import { MomoOptionalOtps, MomoRequireOtps } from '../types/momo/momo.type';
-import { PaymentRep } from '../dto/responses/payment-response.type';
+import { PaymentRep } from '../dto/responses/response.dto';
 import { v1 } from "uuid";
 import axios from 'axios';
-import { MomoCreateRep } from '../types/momo/momo.response';
 import { AxiosError } from 'axios';
+import { MomoOptionalOtps, MomoRequireOtps } from '../dto/requests/momo-request.dto';
+import { MomoCreateResponseDto } from '../dto/responses/momo-response.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -62,7 +62,7 @@ export class PaymentsService {
 
         const API_URL = MomoConstants.Enpoint + "/" + "create";
         try {
-            const response = await axios.post<MomoCreateRep>(API_URL, params);
+            const response = await axios.post<MomoCreateResponseDto>(API_URL, params);
 
             console.log(response.data);
             if (response.data) {

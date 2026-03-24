@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { CommonStatus, Prisma } from 'prisma/generated/client';
 import { PrismaService } from 'src/configs/prisma-client.config';
-import { CommonStatus } from 'prisma/generated/client';
 import { toSlug } from 'src/utils/toSlug.utils';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto/requests/request.dto';
 import { CategoryPaginationResponseDto, CategoryResponseDto } from '../dto/responses/response.dto';
@@ -73,15 +73,15 @@ export class CategoriesService {
         return category;
     }
 
-    async searchCategories(conditions: { name?: string; status?: 'Active' | 'UnActive' | 'Other' }): Promise<CategoryResponseDto[]>  {
-        const where: any = {
+    async searchCategories(conditions: { name?: string; status?: CommonStatus }): Promise<CategoryResponseDto[]> {
+        const where: Prisma.CategoriesWhereInput = {
             isDelete: false,
         };
 
         if (conditions.name) {
             where.name = {
-                $regex: conditions.name,
-                $options: 'i', // Case insensitive
+                contains: conditions.name,
+                mode: 'insensitive',
             };
         }
 
@@ -107,8 +107,6 @@ export class CategoriesService {
             },
         });
 
-        console.log('Existing category: ', existingCategory);
-
         if (existingCategory) {
             throw new BadRequestException('Tên của danh mục này đã tồn tại');
         }
@@ -116,7 +114,7 @@ export class CategoriesService {
         const newCategory = await this.prismaService.prismaClient.categories.create({
             data: {
                 name: body.name,
-                status: (body.status as CommonStatus) ?? CommonStatus.Active,
+                status: body.status,
                 slug: toSlug(body.name),
             },
         });
@@ -151,7 +149,7 @@ export class CategoriesService {
             }
         }
 
-        const data : any = {};
+        const data: Prisma.CategoriesUpdateInput = {};
         if (body.name) {
             data.name = body.name;
             data.slug = toSlug(body.name);

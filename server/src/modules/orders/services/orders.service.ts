@@ -225,4 +225,15 @@ export class OrdersService {
                 : undefined,
         };
     }
+
+    async getOrdersByAccountId(accountId: string): Promise<OrderResponseDto[]> {
+        const orders = await this.prismaService.prismaClient.orders.findMany({
+            where: { accountId },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+
+        return orders.map((order) => this.mapOrder(order));
+    }
 }

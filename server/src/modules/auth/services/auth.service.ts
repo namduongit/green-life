@@ -6,7 +6,16 @@ import { BcryptUtils } from 'src/utils/bcrypt.utils';
 import { LoginRep, RegisterRep } from '../dto/responses/auth-response.dto';
 import { LoginDto } from '../dto/requests/login.dto';
 import { RegisterDto } from '../dto/requests/register.dto';
-import { JwtType } from '../types/jwt-type';
+
+export type JwtPayload = {
+    sub: {
+        uid: string;
+        email: string;
+        joinTime: Date;
+        isLock: boolean;
+    };
+    role: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -67,7 +76,7 @@ export class AuthService {
                 isLock: account.isLock,
             },
             role: account.role,
-        } as JwtType);
+        } as JwtPayload);
 
         return {
             uid: account.id,

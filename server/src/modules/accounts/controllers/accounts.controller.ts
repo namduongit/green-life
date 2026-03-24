@@ -1,9 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UnauthorizedException } from '@nestjs/common';
+import { Request } from 'express';
 import { AccountsService } from '../services/accounts.service';
 import { AddressesService } from '../../addresses/services/addresses.service';
 import { CartsService } from '../../carts/services/carts.service';
 import { CreateAccountDto, QueryAccountDto, UpdateAccountDto } from '../dto/requests/request.dto';
 import { CreateAddressDto, UpdateAddressDto } from 'src/modules/addresses/dto/requests/request.dto';
+import { OrdersService } from 'src/modules/orders/services/orders.service';
+import { JwtPayload } from 'src/modules/auth/services/auth.service';
 
 @Controller('api/users')
 export class AccountsController {
@@ -11,6 +14,7 @@ export class AccountsController {
         private readonly usersService: AccountsService,
         private readonly addressesService: AddressesService,
         private readonly cartsService: CartsService,
+        private readonly ordersService: OrdersService,
     ) {}
 
     @Get()
@@ -91,4 +95,10 @@ export class AccountsController {
     clearCart(@Param('id') id: string) {
         return this.cartsService.clearCart(id);
     }
-}   
+
+    // ========== Orders ==========
+    @Get(':id/orders')
+    getOrders(@Param('id') id: string) {
+        return this.ordersService.getOrdersByAccountId(id);
+    }
+}

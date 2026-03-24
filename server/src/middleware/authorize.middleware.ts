@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { JwtType } from "src/modules/auth/types/jwt-type";
+import { JwtPayload } from "src/modules/auth/services/auth.service";
 
 @Injectable()
 export class AuthorizeMiddleware implements NestMiddleware {
@@ -13,7 +13,7 @@ export class AuthorizeMiddleware implements NestMiddleware {
             throw new UnauthorizedException("Token không tồn tại");
         }
         try {
-            const decoded = this.jwtService.verify(token) as JwtType;
+            const decoded = this.jwtService.verify(token) as JwtPayload;
             req.user = decoded;
             console.log(decoded)
         } catch (error) {

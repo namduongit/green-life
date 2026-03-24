@@ -52,6 +52,7 @@ export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer.apply(LoggerMiddleware).forRoutes('*');
         consumer.apply(AuthorizeMiddleware).forRoutes('/api/users/:id/cart');
+        consumer.apply(AuthorizeMiddleware).forRoutes('/api/users/:id/orders');
         consumer.apply(AuthorizeMiddleware).forRoutes('/api/orders');
     }
 }

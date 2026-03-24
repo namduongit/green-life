@@ -1,92 +1,89 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import LayerCart from "../../components/layer-cart/layer-cart";
+import { useAuthContext } from "../../contexts/auth/auth";
 import { useCart } from "../../contexts/cart/cart";
 import { useToastContext } from "../../contexts/toast-message/toast-message";
+import { useExecute } from "../../hooks/execute";
+import { getAddresses } from "../../services/address";
+import type {
+    AddressPayload,
+    AddressRep,
+} from "../../services/address/address.type";
+import { createOrder } from "../../services/order/order.service";
+import type { OrderPaymentMethod } from "../../lib/types/enums.typs";
 
-interface AddressForm {
-    fullName: string;
-    phone: string;
-    city: string;
-    district: string;
-    ward: string;
-    detail: string;
-}
+type AddressField = keyof Omit<AddressPayload, "isDefault">;
 
-interface SavedAddress extends AddressForm {
-    id: string;
-    label: string;
-    isDefault?: boolean;
-}
-
-type PaymentMethod = "cod" | "momo" | "sepay";
-
-const mockSavedAddresses: SavedAddress[] = [
-    {
-        id: "home",
-        label: "Nhà riêng",
-        fullName: "Lê Minh Khôi",
-        phone: "0903 123 456",
-        city: "TP. Hồ Chí Minh",
-        district: "Quận 3",
-        ward: "Phường 6",
-        detail: "24/3 Nguyễn Thông",
-        isDefault: true
-    },
-    {
-        id: "office",
-        label: "Văn phòng",
-        fullName: "Lê Minh Khôi",
-        phone: "0903 888 111",
-        city: "TP. Hồ Chí Minh",
-        district: "Quận 1",
-        ward: "Phường Bến Nghé",
-        detail: "Tầng 12, Toà nhà GreenLife"
-    }
-];
-
-const initialAddressForm: AddressForm = {
+const initialAddressForm: AddressPayload = {
     fullName: "",
     phone: "",
-    city: "",
-    district: "",
+    province: "",
     ward: "",
-    detail: ""
+    detail: "",
+    isDefault: false,
 };
 
-const paymentOptions: { id: PaymentMethod; title: string; description: string }[] = [
-    { id: "cod", title: "Thanh toán khi nhận hàng", description: "Thanh toán trực tiếp cho shipper, phù hợp mọi khu vực." },
-    { id: "momo", title: "Ví điện tử MoMo", description: "Cổng thanh toán an toàn, hỗ trợ trả góp 0%." },
-    { id: "sepay", title: "Cổng thanh toán Sepay", description: "Chuyển khoản nhanh qua Sepay, xác nhận tức thì." }
+const paymentOptions: { id: OrderPaymentMethod; title: string; description: string }[] = [
+    { id: "Cod", title: "Thanh toán khi nhận hàng", description: "Thanh toán trực tiếp cho shipper, phù hợp mọi khu vực." },
+    { id: "Momo", title: "Ví điện tử MoMo", description: "Cổng thanh toán an toàn, hỗ trợ trả góp 0%." },
+    { id: "SePay", title: "Cổng thanh toán Sepay", description: "Chuyển khoản nhanh qua Sepay, xác nhận tức thì." }
 ];
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
     const { cartItems } = useCart();
-    const { showToast } = useToastContext();
+    const { state } = useAuthContext();
+    const { showToast, showErrorResponse } = useToastContext();
 
-    const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+    const { query: fetchOrders, loading: loadingOrders } = useExecute();
+
+    const { query: fetchAddresses, loading: loadingAddresses } = useExecute();
+
+    const [addresses, setAddresses] = useState<AddressRep[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
-    const [addressForm, setAddressForm] = useState<AddressForm>(initialAddressForm);
-    const [loadingAddresses, setLoadingAddresses] = useState(true);
+    const [addressForm, setAddressForm] = useState<AddressPayload>({ ...initialAddressForm });
     const [discountCode, setDiscountCode] = useState("");
     const [appliedCode, setAppliedCode] = useState<string | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+    const [paymentMethod, setPaymentMethod] = useState<OrderPaymentMethod>("Cod");
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [formMessage, setFormMessage] = useState<string | null>(null);
 
-    const loadAddresses = () => {
-        setLoadingAddresses(true);
-        setTimeout(() => {
-            setAddresses(mockSavedAddresses);
-            setSelectedAddressId((prev) => (prev === "new" && mockSavedAddresses.length > 0 ? mockSavedAddresses[0].id : prev));
-            setLoadingAddresses(false);
-        }, 400);
+    const refreshAddresses = async () => {
+        if (!state?.uid) {
+            setAddresses([]);
+            setSelectedAddressId("new");
+            setAddressForm({ ...initialAddressForm });
+            return;
+        }
+
+        const result = await fetchAddresses<AddressRep[]>(getAddresses(state.uid));
+        if (result?.errors) {
+            showErrorResponse(result.errors);
+            return;
+        }
+
+        const addressesData = result?.data;
+        if (addressesData) {
+            setAddresses(addressesData);
+            if (addressesData.length === 0) {
+                setSelectedAddressId("new");
+                setAddressForm({ ...initialAddressForm });
+                return;
+            }
+            setSelectedAddressId((prev) => {
+                if (prev !== "new" && addressesData.some((addr) => addr.id === prev)) {
+                    return prev;
+                }
+                const defaultAddress = addressesData.find((addr) => addr.isDefault);
+                return defaultAddress?.id ?? addressesData[0].id;
+            });
+        }
     };
 
     useEffect(() => {
-        loadAddresses();
-    }, []);
+        void refreshAddresses();
+    }, [state?.uid]);
 
     useEffect(() => {
         if (selectedAddressId === "new") {
@@ -97,10 +94,10 @@ const CheckoutPage = () => {
             setAddressForm({
                 fullName: matched.fullName,
                 phone: matched.phone,
-                city: matched.city,
-                district: matched.district,
+                province: matched.province,
                 ward: matched.ward,
-                detail: matched.detail
+                detail: matched.detail,
+                isDefault: matched.isDefault,
             });
         }
     }, [selectedAddressId, addresses]);
@@ -109,7 +106,7 @@ const CheckoutPage = () => {
         setIsConfirmed(false);
     }, [addressForm, paymentMethod, selectedAddressId, appliedCode]);
 
-    const handleAddressInput = (field: keyof AddressForm, value: string) => {
+    const handleAddressInput = (field: AddressField, value: string) => {
         setAddressForm((prev) => ({ ...prev, [field]: value }));
         setSelectedAddressId("new");
     };
@@ -126,7 +123,12 @@ const CheckoutPage = () => {
     const discountValue = appliedCode ? Math.round(subtotal * 0.05) : 0;
     const total = subtotal + vat + shippingEstimate - discountValue;
 
-    const isAddressValid = Object.values(addressForm).every((value) => value.trim().length > 0);
+    const isAddressValid =
+        addressForm.fullName.trim().length > 0 &&
+        addressForm.phone.trim().length > 0 &&
+        addressForm.province.trim().length > 0 &&
+        addressForm.ward.trim().length > 0 &&
+        addressForm.detail.trim().length > 0;
     const canConfirm = isAddressValid && cartItems.length > 0;
 
     const handleConfirm = () => {
@@ -140,20 +142,33 @@ const CheckoutPage = () => {
         showToast("Success", "Thông tin đơn hàng đã được xác nhận.");
     };
 
-    const handlePlaceOrder = () => {
+    const handlePlaceOrder = async () => {
         if (!isConfirmed) {
             setFormMessage("Bạn cần xác nhận thông tin trước khi thanh toán.");
             showToast("Note", "Xác nhận thông tin để tiếp tục thanh toán.");
             return;
         }
-        showToast("Success", "Đang chuyển tới cổng thanh toán...");
-        navigate("/page/payment", {
-            state: {
-                paymentMethod,
-                address: addressForm,
-                discountCode: appliedCode ?? undefined
+        const result = await fetchOrders<any>(createOrder({
+            recipientName: addressForm.fullName,
+            recipientPhone: addressForm.phone,
+            recipientProvince: addressForm.province,
+            recipientWard: addressForm.ward,
+            recipientDetail: addressForm.detail,
+            orderItem: cartItems.map((item) => ({
+                productId: item.product.id,
+                quantity: item.quantity,
+            })),
+            paymentMethod,
+        }));
+        if (result?.data) {
+            showToast("Success", "Đơn hàng của bạn đã được tạo thành công!");
+            if (paymentMethod === "Momo" || paymentMethod === "SePay") {
+                // Todo later
             }
-        });
+            else {
+                navigate("/order-success");
+            }
+        }
     };
 
     const handleApplyDiscount = () => {
@@ -174,7 +189,7 @@ const CheckoutPage = () => {
         <div className="pb-20">
             <LayerCart />
             <div className="sm-container mx-auto flex flex-col lg:flex-row gap-8 py-10">
-                <section className="flex-[2] space-y-8">
+                <section className="flex-2 space-y-8">
                     <div className="border border-gray-200 rounded-xl p-5 space-y-5">
                         <div className="flex items-center justify-between">
                             <div>
@@ -183,18 +198,29 @@ const CheckoutPage = () => {
                             </div>
                             <button
                                 type="button"
-                                onClick={loadAddresses}
-                                className="text-sm text-green-700 hover:underline"
+                                onClick={() => void refreshAddresses()}
+                                disabled={loadingAddresses}
+                                className="text-sm text-green-700 hover:underline disabled:opacity-50"
                             >
-                                Tải lại địa chỉ
+                                {loadingAddresses ? "Đang tải..." : "Tải lại địa chỉ"}
                             </button>
                         </div>
                         <div className="space-y-3">
+                            {!state && (
+                                <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                                    Đăng nhập để sử dụng các địa chỉ đã lưu. Bạn vẫn có thể nhập địa chỉ mới bên dưới.
+                                </p>
+                            )}
                             {loadingAddresses && (
                                 <div className="animate-pulse space-y-3">
                                     <div className="h-10 bg-gray-200 rounded"></div>
                                     <div className="h-10 bg-gray-200 rounded"></div>
                                 </div>
+                            )}
+                            {!loadingAddresses && state && addresses.length === 0 && (
+                                <p className="text-sm text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 text-center">
+                                    Bạn chưa có địa chỉ đã lưu. Hãy thêm địa chỉ mới để sử dụng cho lần sau.
+                                </p>
                             )}
                             {!loadingAddresses && addresses.length > 0 && (
                                 <div className="space-y-3">
@@ -211,14 +237,18 @@ const CheckoutPage = () => {
                                             />
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="font-semibold">{addr.label}</h3>
-                                                    {addr.isDefault && <span className="text-xs bg-green-700 text-white px-2 py-0.5 rounded">Mặc định</span>}
+                                                    <h3 className="font-semibold">{addr.fullName}</h3>
+                                                    {addr.isDefault && (
+                                                        <span className="text-xs bg-green-700 text-white px-2 py-0.5 rounded">
+                                                            Mặc định
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="text-sm text-gray-600">
-                                                    {addr.fullName} · {addr.phone}
+                                                    {addr.phone}
                                                 </p>
                                                 <p className="text-sm text-gray-600">
-                                                    {addr.detail}, {addr.ward}, {addr.district}, {addr.city}
+                                                    {addr.detail}, {addr.ward}, {addr.province}
                                                 </p>
                                             </div>
                                         </label>
@@ -229,7 +259,10 @@ const CheckoutPage = () => {
                                 <input
                                     type="radio"
                                     checked={selectedAddressId === "new"}
-                                    onChange={() => setSelectedAddressId("new")}
+                                    onChange={() => {
+                                        setSelectedAddressId("new");
+                                        setAddressForm({ ...initialAddressForm });
+                                    }}
                                 />
                                 <div>
                                     <h3 className="font-semibold">Thêm địa chỉ mới</h3>
@@ -260,17 +293,8 @@ const CheckoutPage = () => {
                                 <label className="text-sm text-gray-600">Tỉnh/Thành phố</label>
                                 <input
                                     type="text"
-                                    value={addressForm.city}
-                                    onChange={(e) => handleAddressInput("city", e.target.value)}
-                                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm text-gray-600">Quận/Huyện</label>
-                                <input
-                                    type="text"
-                                    value={addressForm.district}
-                                    onChange={(e) => handleAddressInput("district", e.target.value)}
+                                    value={addressForm.province}
+                                    onChange={(e) => handleAddressInput("province", e.target.value)}
                                     className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
                                 />
                             </div>
@@ -285,11 +309,11 @@ const CheckoutPage = () => {
                             </div>
                             <div className="md:col-span-2">
                                 <label className="text-sm text-gray-600">Địa chỉ cụ thể</label>
-                                <input
-                                    type="text"
+                                <textarea
                                     value={addressForm.detail}
                                     onChange={(e) => handleAddressInput("detail", e.target.value)}
                                     className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
+                                    rows={3}
                                 />
                             </div>
                         </div>
@@ -422,10 +446,10 @@ const CheckoutPage = () => {
                         <button
                             type="button"
                             onClick={handlePlaceOrder}
-                            disabled={!isConfirmed || cartItems.length === 0}
+                            disabled={!isConfirmed || loadingOrders || cartItems.length === 0}
                             className="w-full rounded-lg bg-green-700 px-4 py-3 text-white font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 hover:bg-green-800"
                         >
-                            Thanh toán
+                            {loadingOrders ? "Đang xử lý..." : "Thanh toán"}
                         </button>
                         <p className="text-xs text-gray-500">Xác nhận xong mới được thanh toán. Số tiền có thể thay đổi nếu phí vận chuyển thực tế khác biệt.</p>
                     </div>

@@ -12,9 +12,12 @@ export type Account = {
 export type Address = {
     id: string;
     accountId: string;
+    fullName: string;
+    phone: string;
     province: string;
-    city: string;
-    home: string;
+    ward: string;
+    detail: string;
+    isDefault: boolean;
     createdAt: string;
     updatedAt?: string;
 };

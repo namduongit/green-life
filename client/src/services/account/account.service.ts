@@ -32,40 +32,6 @@ export const activateAccount = async (id: string) => {
     return response;
 }
 
-export const getUserAddresses = async (userId: string) => {
-    const response = await api.get<AddressRep[]>(
-        `/api/users/${userId}/address`,
-    );
-    return response.data;
-};
-
-export const addAddress = async (userId: string, addressForm: AddressForm) => {
-    const response = await api.post<AddressRep>(
-        `/api/users/${userId}/address`,
-        addressForm,
-    );
-    return response.data;
-};
-
-export const updateAddress = async (
-    userId: string,
-    addressId: string,
-    addressForm: Partial<AddressForm>,
-) => {
-    const response = await api.put<AddressRep>(
-        `/api/users/${userId}/address/${addressId}`,
-        addressForm,
-    );
-    return response.data;
-};
-
-export const deleteAddress = async (userId: string, addressId: string) => {
-    const response = await api.delete(
-        `/api/users/${userId}/address/${addressId}`,
-    );
-    return response.data;
-};
-
 export const getUserCart = async (userId: string) => {
     const response = await api.get<CartItemRep>(`/api/users/${userId}/cart`);
     return response.data;

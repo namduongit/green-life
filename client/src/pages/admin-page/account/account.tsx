@@ -46,9 +46,7 @@ const AdminAccount = () => {
     const [searchInput, setSearchInput] = useState<string>("");
     const [roleFilter, setRoleFilter] = useState<string>("");
 
-    const [currentPage, setCurrentPage] = useState<number>(1);
-
-    const [showAddAccount, setShowAddModal] = useState<boolean>(false);
+    const [showAddAccount, setShowAddAccount] = useState<boolean>(false);
     const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<AccountRep | null>(null);
 
     const handleDeactivateAccount = async (id: string) => {
@@ -60,7 +58,7 @@ const AdminAccount = () => {
     }
 
     const handleAccountAdded = (newAccount: AccountRep) => {
-
+        setAccounts(prev => [...prev, newAccount]);
     }
 
     const formatDate = (date: Date | string) => {
@@ -165,7 +163,7 @@ const AdminAccount = () => {
                     </button>
 
                     <button
-                        onClick={() => setShowAddModal(true)}
+                        onClick={() => setShowAddAccount(true)}
                         className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded
                             text-sm ring-2 ring-blue-600 hover:bg-white hover:text-blue-600 transition">
                         <i className="fa-solid fa-user-plus"></i>
@@ -247,29 +245,6 @@ const AdminAccount = () => {
                             tableHead={tableHead}
                             tableBody={tableBody}
                         />
-                        <div className="flex justify-between items-center mt-4">
-                            <span className="text-sm text-gray-500">
-                                Trang {currentPage} / {accounts.length || 1}
-                            </span>
-
-                            <div className="flex gap-2">
-                                <button
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage(prev => prev - 1)}
-                                    className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
-                                >
-                                    Previous
-                                </button>
-
-                                <button
-                                    disabled={currentPage === accounts.length || accounts.length === 0}
-                                    onClick={() => setCurrentPage(prev => prev + 1)}
-                                    className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
                     </>
                 )}
             </div>
@@ -277,7 +252,7 @@ const AdminAccount = () => {
             {showAddAccount && (
                 <AddAccount
                     onAccountAdded={handleAccountAdded}
-                    onClose={() => setShowAddModal(false)}
+                    onClose={() => setShowAddAccount(false)}
                 />
             )}
 

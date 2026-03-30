@@ -13,7 +13,7 @@ export class AccountsService {
         query: SearchParamsQuery<Prisma.AccountsWhereInput, Prisma.AccountsOrderByWithRelationInput>,
     ): Promise<AccountResponseDto[]> {
         const data = await this.prismaService.prismaClient.accounts.findMany({
-            ...query,
+            // ...(query || {}),
         });
         return data.map((account) => ({
             id: account.id,

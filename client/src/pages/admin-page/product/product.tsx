@@ -1,87 +1,73 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import InputSearch from "../../../components/input/input-search/input-search";
 import Stats from "../../../components/stats/stats";
 import Table from "../../../components/table/table";
 import type { TableBody, TableHeader } from "../../../components/table/table";
-
 import {
     getAllProducts,
     deleteProduct,
     reActivateProduct,
 } from "../../../services/product/product";
-
 import type { ProductRep } from "../../../services/product/product.type";
-
 import AddProduct from "../../../components/add/product/add-product";
 import EditProduct from "../../../components/edit/product/edit-product";
+import { useExecute } from "../../../hooks/execute";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
 import { useModalConfirmContext } from "../../../contexts/modal-confirm/modal-confirm";
-import { useExecute } from "../../../hooks/execute";
 
 const AdminProduct = () => {
+    const { query, loading } = useExecute();
     const [products, setProducts] = useState<ProductRep[]>([]);
-    const [filteredProducts, setFilteredProducts] = useState<ProductRep[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        totalProducts: 0,
+        activeProducts: 0,
+        deletedProducts: 0,
+    });
 
-    const [searchInput, setSearchInput] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const [searchInput, setSearchInput] = useState<string>("");
+    const [showAddModal, setShowAddModal] = useState<boolean>(false);
+    const [selectedProductForEdit, setSelectedProductForEdit] = useState<ProductRep | null>(null);
 
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [selectedProductForEdit, setSelectedProductForEdit] =
-        useState<ProductRep | null>(null);
-
-    const [totalProducts, setTotalProducts] = useState(0);
-    const [deletedProducts, setDeletedProducts] = useState(0);
     const { showToast, showErrorResponse } = useToastContext();
     const { waitConfirm } = useModalConfirmContext();
-    const { query } = useExecute();
 
-
-
-    // FETCH
-    const fetchProducts = async () => {
-        setLoading(true);
-        const result = await query(getAllProducts());
-        if (result?.errors) {
-            showErrorResponse(result.errors);
-        } else if (result && !result.errors) {
-            console.log("Fetched products:", result.data);
-            const data: ProductRep[] = Array.isArray(result.data)
-                ? result.data
-                :  [];
-
+    const fetchProducts = useCallback(async () => {
+        const response = await query<ProductRep[]>(getAllProducts());
+        if (response && response.data) {
+            const data = Array.isArray(response.data) ? response.data : [];
             setProducts(data);
-            setFilteredProducts(data);
-            setTotalProducts(data.length);
-            setDeletedProducts(data.filter(p => p.isDelete).length);
+        } else {
+            setProducts([]);
         }
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        fetchProducts();
     }, []);
 
-    // SEARCH
     useEffect(() => {
-        const filtered = products.filter(product => {
-            const id = product.id ?? "";
-            const name = product.property?.name ?? "";
-            const category = product.category?.name ?? "";
+        void fetchProducts();
+    }, [fetchProducts]);
 
-            return (
-                id.toLowerCase().includes(searchInput.toLowerCase()) ||
-                name.toLowerCase().includes(searchInput.toLowerCase()) ||
-                category.toLowerCase().includes(searchInput.toLowerCase())
-            );
+    useEffect(() => {
+        const total = products.length;
+        const deleted = products.filter(p => p.isDelete).length;
+        const active = total - deleted;
+        setStats({
+            totalProducts: total,
+            activeProducts: active,
+            deletedProducts: deleted,
         });
+    }, [products]);
 
-        setFilteredProducts(filtered);
-        setCurrentPage(1);
-    }, [searchInput, products]);
+    const filteredProducts = Array.isArray(products) ? products.filter(product => {
+        const id = product.id ?? "";
+        const name = product.property?.name ?? "";
+        const category = product.category?.name ?? "";
 
-    // DELETE
+        return (
+            id.toLowerCase().includes(searchInput.toLowerCase()) ||
+            name.toLowerCase().includes(searchInput.toLowerCase()) ||
+            category.toLowerCase().includes(searchInput.toLowerCase())
+        );
+    }) : [];
+
     const handleDeleteProduct = async (id: string) => {
         if (!id) return;
 
@@ -90,32 +76,21 @@ const AdminProduct = () => {
 
         const result = await query<ProductRep>(deleteProduct(id));
 
-        if (result?.errors) {
-            showErrorResponse(result.errors);
-        } else if (result && !result.errors) {
-            showToast("Success", "Đã xóa sản phẩm");
+        if (!result) return;
 
+        if (result.errors) {
+            showErrorResponse(result.errors);
+        } else {
+            showToast("Success", "Đã xóa sản phẩm");
             setProducts(prev =>
                 prev.map(p =>
-                    p.id === id
-                        ? { ...p, isDelete: true }
-                        : p
+                    p.id === id ? { ...p, isDelete: true } : p
                 )
             );
-
-            setFilteredProducts(prev =>
-                prev.map(p =>
-                    p.id === id
-                        ? { ...p, isDelete: true }
-                        : p
-                )
-            );
-
-            setDeletedProducts(prev => prev + 1);
         }
     };
 
-const handleReActivateProduct = async (id: string) => {
+    const handleReActivateProduct = async (id: string) => {
         if (!id) return;
 
         const confirm = await waitConfirm();
@@ -123,41 +98,22 @@ const handleReActivateProduct = async (id: string) => {
 
         const result = await query<ProductRep>(reActivateProduct(id));
 
-        if (result?.errors) {
-            showErrorResponse(result.errors);
-        } else if (result && !result.errors) {
-            showToast("Success", "Đã mở khoá sản phẩm");
+        if (!result) return;
 
+        if (result.errors) {
+            showErrorResponse(result.errors);
+        } else {
+            showToast("Success", "Đã mở khóa sản phẩm");
             setProducts(prev =>
                 prev.map(p =>
-                    p.id === id
-                        ? { ...p, isDelete: false }
-                        : p
+                    p.id === id ? { ...p, isDelete: false } : p
                 )
             );
-
-            setFilteredProducts(prev =>
-                prev.map(p =>
-                    p.id === id
-                        ? { ...p, isDelete: false }
-                        : p
-                )
-            );
-
-            setDeletedProducts(prev => prev - 1);
         }
     };
 
 
 
-    // PAGINATION
-    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-    const currentProducts = filteredProducts.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // TABLE
     const tableHead: TableHeader = [
         "ID",
         "Image",
@@ -170,7 +126,7 @@ const handleReActivateProduct = async (id: string) => {
         "Actions",
     ];
 
-    const tableBody: TableBody = currentProducts.map(product => [
+    const tableBody: TableBody = filteredProducts.map(product => [
         {
             reactNode: (
                 <div
@@ -182,7 +138,6 @@ const handleReActivateProduct = async (id: string) => {
             ),
             clipboard: product.id
         },
-
         {
             reactNode: product.property?.urlImage ? (
                 <img
@@ -193,7 +148,6 @@ const handleReActivateProduct = async (id: string) => {
                 "N/A"
             ),
         },
-
         {
             reactNode: (
                 <div
@@ -204,7 +158,6 @@ const handleReActivateProduct = async (id: string) => {
                 </div>
             )
         },
-
         {
             reactNode: (
                 <div
@@ -215,71 +168,64 @@ const handleReActivateProduct = async (id: string) => {
                 </div>
             )
         },
-
-
         product.property?.price !== undefined
             ? product.property.price.toLocaleString("vi-VN") + " đ"
             : "0 đ",
-
         product.property
             ? `${product.property.length ?? 0} x ${product.property.width ?? 0} x ${product.property.height ?? 0}`
             : "N/A",
-
         product.property?.unit ?? "N/A",
-
         {
-    reactNode: (
-        <div
-            onClick={() =>
-                product.isDelete
-                    ? handleReActivateProduct(product.id)
-                    : handleDeleteProduct(product.id)
-            }
-            className="cursor-pointer"
-        >
-            <span
-                className={`px-2 py-1 rounded ${
-                    product.isDelete
-                        ? "text-red-600 bg-red-100"
-                        : "text-green-600 bg-green-100"
-                }`}
-            >
-                {product.isDelete ? "Đã xóa" : "Hoạt động"}
-            </span>
-        </div>
-    )
-},
-
+            reactNode: (
+                <div
+                    onClick={() =>
+                        product.isDelete
+                            ? handleReActivateProduct(product.id)
+                            : handleDeleteProduct(product.id)
+                    }
+                    className="cursor-pointer"
+                >
+                    <span
+                        className={`px-2 py-1 rounded ${
+                            product.isDelete
+                                ? "text-red-600 bg-red-100"
+                                : "text-green-600 bg-green-100"
+                        }`}
+                    >
+                        {product.isDelete ? "Đã xóa" : "Hoạt động"}
+                    </span>
+                </div>
+            )
+        },
         {
-    reactNode: (
-        <div className="flex gap-2">
-            {!product.isDelete && (
-                <button
-                    onClick={() => setSelectedProductForEdit(product)}
-                    className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
-                >
-                    Sửa
-                </button>
-            )}
-
-            {product.isDelete ? (
-                <button
-                    onClick={() => handleReActivateProduct(product.id)}
-                    className="px-2 py-1 text-xs rounded border border-green-300 text-green-600 hover:bg-green-50"
-                >
-                    Khôi phục
-                </button>
-            ) : (
-                <button
-                    onClick={() => handleDeleteProduct(product.id)}
-                    className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600 hover:bg-red-50"
-                >
-                    Xóa
-                </button>
-            )}
-        </div>
-    ),
-},
+            reactNode: (
+                <div className="flex items-center gap-2">
+                    {!product.isDelete && (
+                        <button
+                            onClick={() => setSelectedProductForEdit(product)}
+                            className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                        >
+                            Sửa
+                        </button>
+                    )}
+                    {product.isDelete ? (
+                        <button
+                            onClick={() => handleReActivateProduct(product.id)}
+                            className="px-2 py-1 text-xs rounded border border-green-300 text-green-600 hover:bg-green-50"
+                        >
+                            Khôi phục
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600 hover:bg-red-50"
+                        >
+                            Xóa
+                        </button>
+                    )}
+                </div>
+            ),
+        },
     ]);
 
     return (
@@ -311,14 +257,21 @@ const handleReActivateProduct = async (id: string) => {
                 <Stats
                     icon={<i className="fa-regular fa-rectangle-list"></i>}
                     title="Tổng sản phẩm"
-                    des={`${totalProducts} sản phẩm`}
+                    des={`${stats.totalProducts} sản phẩm`}
+                />
+                <Stats
+                    icon={<i className="fa-solid fa-check-circle"></i>}
+                    iconColor="text-green-600"
+                    iconBg="bg-green-100"
+                    title="Sản phẩm hoạt động"
+                    des={`${stats.activeProducts} sản phẩm`}
                 />
                 <Stats
                     icon={<i className="fa-solid fa-trash"></i>}
                     iconColor="text-red-600"
                     iconBg="bg-red-100"
                     title="Đã xóa"
-                    des={`${deletedProducts} sản phẩm`}
+                    des={`${stats.deletedProducts} sản phẩm`}
                 />
             </div>
 
@@ -343,39 +296,20 @@ const handleReActivateProduct = async (id: string) => {
                 </div>
             </div>
 
-            {loading ? (
-                <div className="flex justify-center items-center py-10">
-                    <p className="text-gray-500">Đang tải dữ liệu...</p>
-                </div>
-            ) : (
-                <>
-                    <Table tableHead={tableHead} tableBody={tableBody} />
-
-                    <div className="flex justify-between items-center mt-4">
-                        <span className="text-sm text-gray-500">
-                            Trang {currentPage} / {totalPages || 1}
-                        </span>
-
-                        <div className="flex gap-2">
-                            <button
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(prev => prev - 1)}
-                                className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
-                            >
-                                Previous
-                            </button>
-
-                            <button
-                                disabled={currentPage === totalPages || totalPages === 0}
-                                onClick={() => setCurrentPage(prev => prev + 1)}
-                                className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                        </div>
+            <div>
+                {loading ? (
+                    <div className="flex justify-center items-center py-10">
+                        <p className="text-gray-500">Đang tải dữ liệu...</p>
                     </div>
-                </>
-            )}
+                ) : (
+                    <>
+                        <Table
+                            tableHead={tableHead}
+                            tableBody={tableBody}
+                        />
+                    </>
+                )}
+            </div>
 
             {showAddModal && (
                 <AddProduct
@@ -393,12 +327,6 @@ const handleReActivateProduct = async (id: string) => {
                     onClose={() => setSelectedProductForEdit(null)}
                     onUpdated={(updated: ProductRep) => {
                         setProducts(prev =>
-                            prev.map(p =>
-                                p.id === updated.id ? updated : p
-                            )
-                        );
-
-                        setFilteredProducts(prev =>
                             prev.map(p =>
                                 p.id === updated.id ? updated : p
                             )

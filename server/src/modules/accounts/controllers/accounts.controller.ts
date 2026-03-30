@@ -37,10 +37,10 @@ export class AccountsController {
         return this.usersService.update(id, data);
     }
 
-    @Delete(':id')
-    deleteUser(@Param('id') id: string) {
-        return this.usersService.deActivate(id);
-    }
+    // @Delete(':id')
+    // deleteUser(@Param('id') id: string) {
+    //     return this.usersService.deActivate(id);
+    // }
 
     @Patch( ':id/activate')
     activateUser(@Param('id') id: string) {

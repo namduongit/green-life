@@ -2,7 +2,7 @@ import { api } from "../../lib/api/api";
 import type { ProductRep } from "./product.type";
 
 export const getAllProducts = async (page: number = 0, pageSize: number = 10) => {
-    const response = await api.get<ProductRep[]>("/api/products?" + new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() }).toString());
+    const response = await api.get<ProductRep[]>(`/api/products?page=${page}&pageSize=${pageSize}`);
     return response;
 };
 

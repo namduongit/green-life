@@ -126,10 +126,10 @@ export class ProductsController {
     }
 
 
-    @Patch('/:id/activate')
-    async ReActivateProduct(@Param('id') id: string) {
-        const reActivatedProduct = await this.productsService.reActivate(id);
-        return reActivatedProduct;
-    }
+    // @Patch('/:id/activate')
+    // async ReActivateProduct(@Param('id') id: string) {
+    //     const reActivatedProduct = await this.productsService.reActivate(id);
+    //     return reActivatedProduct;
+    // }
 
 }

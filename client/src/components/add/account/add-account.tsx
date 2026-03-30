@@ -27,6 +27,7 @@ const AddAccount = ({ onAccountAdded, onClose }: AddAccountProps) => {
         } else if (result?.data) {
             showToast("Success", "Thêm tài khoản thành công!");
             onAccountAdded?.(result.data);
+            onClose?.();
             // Reset form
             setAccountForm({ email: "", password: "", role: "User" });
         }

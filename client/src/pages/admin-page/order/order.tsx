@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import InputSearch from "../../../components/input/input-search/input-search";
 import Stats from "../../../components/stats/stats";
 import Table from "../../../components/table/table";
@@ -45,25 +45,29 @@ const paymentStatusClass: Record<OrderPaymentStatus, string> = {
 };
 
 const AdminOrder = () => {
-    const { query } = useExecute();
+    const { query, loading } = useExecute();
     const [orders, setOrders] = useState<OrderRep[]>([]);
     const [stats, setStats] = useState({
+        totalOrders: 0,
         totalAmount: 0,
         pendingCount: 0,
         doneCount: 0,
         paidCount: 0,
     });
 
+    const [searchInput, setSearchInput] = useState<string>("");
+
     const fetchOrders = useCallback(async () => {
         const response = await query<OrderRep[]>(getOrder());
         if (response && response.data) {
-            setOrders(response.data);
+            const data = Array.isArray(response.data) ? response.data : [];
+            setOrders(data);
         }
     }, []);
 
     useEffect(() => {
         void fetchOrders();
-    }, []);
+    }, [fetchOrders]);
 
     useEffect(() => {
         const totalAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
@@ -72,6 +76,7 @@ const AdminOrder = () => {
         const paidCount = orders.filter((order) => order.paymentStatus === "Paid").length;
 
         setStats({
+            totalOrders: orders.length,
             totalAmount: totalAmount,
             pendingCount: pendingCount,
             doneCount: doneCount,
@@ -79,25 +84,20 @@ const AdminOrder = () => {
         });
     }, [orders]);
 
-    const [searchInput, setSearchInput] = useState<string>("");
-    const [currentPage, setCurrentPage] = useState<number>(1);
-
-    const filteredOrders = useMemo(() => {
+    const filteredOrders = orders.filter((order) => {
         const keyword = searchInput.toLowerCase().trim();
-        if (!keyword) return orders;
+        if (!keyword) return true;
 
-        return orders.filter((order) => {
-            const fullAddress = `${order.recipientDetail}, ${order.recipientWard}, ${order.recipientProvince}`;
+        const fullAddress = `${order.recipientDetail}, ${order.recipientWard}, ${order.recipientProvince}`;
 
-            return (
-                order.id.toLowerCase().includes(keyword) ||
-                order.recipientName.toLowerCase().includes(keyword) ||
-                order.recipientPhone.toLowerCase().includes(keyword) ||
-                fullAddress.toLowerCase().includes(keyword) ||
-                order.accountId.toLowerCase().includes(keyword)
-            );
-        });
-    }, [searchInput, orders]);
+        return (
+            order.id.toLowerCase().includes(keyword) ||
+            order.recipientName.toLowerCase().includes(keyword) ||
+            order.recipientPhone.toLowerCase().includes(keyword) ||
+            fullAddress.toLowerCase().includes(keyword) ||
+            order.accountId.toLowerCase().includes(keyword)
+        );
+    });
 
     const formatDateTime = (value: Date | string) =>
         new Intl.DateTimeFormat("vi-VN", {
@@ -120,7 +120,7 @@ const AdminOrder = () => {
         "Ngày tạo",
     ];
 
-    const tableBody: TableBody = orders.map((order) => [
+    const tableBody: TableBody = filteredOrders.map((order) => [
         {
             reactNode: (
                 <div className="max-w-42 truncate" title={order.id}>
@@ -226,44 +226,37 @@ const AdminOrder = () => {
             <div className="flex justify-between items-center">
                 <InputSearch
                     searchInput={searchInput}
-                    setSearchInput={(value) => {
-                        setSearchInput(value);
-                        setCurrentPage(1);
-                    }}
+                    setSearchInput={setSearchInput}
                     opts={{ width: "w-74" }}
                 />
 
-                <div className="text-sm text-gray-500">
-                    Hiển thị {orders.length} / {filteredOrders.length} đơn hàng
+                <div className="flex gap-2">
+                    <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
+                                text-sm ring-gray-300">
+                        <i className="fa-solid fa-arrow-down-wide-short"></i>
+                        <span>Bộ lọc</span>
+                    </button>
+
+                    <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
+                                text-sm ring-gray-300">
+                        <i className="fa-solid fa-gear"></i>
+                    </button>
                 </div>
             </div>
 
             <div>
-                <Table tableHead={tableHead} tableBody={tableBody} />
-
-                <div className="flex justify-between items-center mt-4">
-                    <span className="text-sm text-gray-500">
-                        Trang {currentPage} / {Math.ceil(filteredOrders.length / 10) || 1}
-                    </span>
-
-                    <div className="flex gap-2">
-                        <button
-                            disabled={currentPage === 1}
-                            onClick={() => setCurrentPage((prev) => prev - 1)}
-                            className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
-                        >
-                            Previous
-                        </button>
-
-                        <button
-                            disabled={currentPage >= Math.ceil(filteredOrders.length / 10) || filteredOrders.length === 0}
-                            onClick={() => setCurrentPage((prev) => prev + 1)}
-                            className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
-                        >
-                            Next
-                        </button>
+                {loading ? (
+                    <div className="flex justify-center items-center py-10">
+                        <p className="text-gray-500">Đang tải dữ liệu...</p>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <Table
+                            tableHead={tableHead}
+                            tableBody={tableBody}
+                        />
+                    </>
+                )}
             </div>
         </div>
     );

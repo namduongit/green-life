@@ -1,183 +1,120 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import InputSearch from "../../../components/input/input-search/input-search";
 import Stats from "../../../components/stats/stats";
 import Table from "../../../components/table/table";
 import type { TableBody, TableHeader } from "../../../components/table/table";
-
 import {
   getAllTags,
   softDeleteTag,
   reActivateTag
 } from "../../../services/tag/tag";
-
 import type { TagRep } from "../../../services/tag/tag.type";
-
 import { useExecute } from "../../../hooks/execute";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
 import AddTag from "../../../components/add/tag/add-tag";
 import EditTag from "../../../components/edit/tag/edit-tag";
 
 const AdminTag = () => {
-  const [searchInput, setSearchInput] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
-
+  const { query, loading } = useExecute();
   const [tags, setTags] = useState<TagRep[]>([]);
-  const [filteredTags, setFilteredTags] = useState<TagRep[]>([]);
+  const [stats, setStats] = useState({
+    totalTags: 0,
+    deletedTags: 0,
+  });
+
+  const [searchInput, setSearchInput] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [totalTags, setTotalTags] = useState<number>(0);
-  const [deletedTags, setDeletedTags] = useState<number>(0);
-
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [selectedTagIdForDelete, setSelectedTagIdForDelete] =
-    useState<string | null>(null);
-  const [selectedTagForEdit, setSelectedTagForEdit] =
-    useState<TagRep | null>(null);
-  const [selectedTagIdForRestore, setSelectedTagIdForRestore] =
-    useState<string | null>(null);
+  const [selectedTagIdForDelete, setSelectedTagIdForDelete] = useState<string | null>(null);
+  const [selectedTagIdForRestore, setSelectedTagIdForRestore] = useState<string | null>(null);
+  const [selectedTagForEdit, setSelectedTagForEdit] = useState<TagRep | null>(null);
 
-  const { query } = useExecute();
   const { showToast, showErrorResponse } = useToastContext();
 
-  const totalPages = Math.ceil(filteredTags.length / itemsPerPage);
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-
-  const currentTags = filteredTags.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-
-  // FETCH
-  useEffect(() => {
-    const fetchTags = async () => {
-      setLoading(true);
-
-      const result = await query<TagRep[]>(getAllTags());
-
-      if (result?.errors) {
-        showErrorResponse(result.errors);
-      } else if (result?.data) {
-        setTags(result.data);
-        setFilteredTags(result.data);
-        setTotalTags(result.data.length);
-        setDeletedTags(result.data.filter(t => t.isDelete).length);
-      }
-
-      setLoading(false);
-    };
-
-    fetchTags();
-  }, []);
-
-  // FILTER
-  useEffect(() => {
-    const filtered = tags.filter(tag => {
-      const matchSearch =
-        tag.name.toLowerCase().includes(searchInput.toLowerCase());
-
-      const matchStatus =
-        statusFilter === "" ||
-        (statusFilter === "DELETED"
-          ? tag.isDelete
-          : !tag.isDelete);
-
-      return matchSearch && matchStatus;
-    });
-
-    setFilteredTags(filtered);
-    setCurrentPage(1);
-  }, [searchInput, statusFilter, tags]);
-
-  // DELETE
-  const confirmDelete = async () => {
-    if (!selectedTagIdForDelete) return;
-
-    const result = await query(
-      softDeleteTag(selectedTagIdForDelete)
-    );
+  const fetchTags = useCallback(async () => {
+    const result = await query<TagRep[]>(getAllTags());
 
     if (result?.errors) {
       showErrorResponse(result.errors);
-    } else {
-      showToast("Success", "Đã xóa tag");
+    } else if (result?.data) {
+      const data = Array.isArray(result.data) ? result.data : [];
+      setTags(data);
+    }
+  }, []);
 
+  useEffect(() => {
+    void fetchTags();
+  }, [fetchTags]);
+
+  useEffect(() => {
+    const total = tags.length;
+    const deleted = tags.filter(t => t.isDelete).length;
+    setStats({
+      totalTags: total,
+      deletedTags: deleted,
+    });
+  }, [tags]);
+
+  const filteredTags = tags.filter(tag => {
+    const matchSearch = tag.name.toLowerCase().includes(searchInput.toLowerCase());
+
+    const matchStatus =
+      statusFilter === "" ||
+      (statusFilter === "DELETED"
+        ? tag.isDelete
+        : !tag.isDelete);
+
+    return matchSearch && matchStatus;
+  });
+
+  const handleReActivateTag = async (id: string) => {
+    const result = await query(reActivateTag(id));
+
+    if (!result) return;
+
+    if (result.errors) {
+      showErrorResponse(result.errors);
+    } else if (result.data) {
+      showToast("Success", "Đã khôi phục tag");
       setTags(prev =>
         prev.map(tag =>
-          tag.id === selectedTagIdForDelete
-            ? { ...tag, isDelete: true }
-            : tag
+          tag.id === id ? { ...tag, isDelete: false } : tag
         )
       );
+    }
+  };
 
-      setDeletedTags(prev => prev + 1);
+  const handleDeleteTag = async (id: string) => {
+    const result = await query(softDeleteTag(id));
+
+    if (!result) return;
+
+    if (result.errors) {
+      showErrorResponse(result.errors);
+    } else if (result.data) {
+      showToast("Success", "Đã xóa tag");
+      setTags(prev =>
+        prev.map(tag =>
+          tag.id === id ? { ...tag, isDelete: true } : tag
+        )
+      );
     }
 
     setSelectedTagIdForDelete(null);
   };
-  //Restore
-  const handleReActivateTag = async (id: string) => {
-    const result = await query(reActivateTag(id));
 
-    if (!result) {
-      showToast("Error", "Không nhận được phản hồi từ server");
-      return;
-    }
-
-    if (result.errors) {
-      showErrorResponse(result.errors);
-      return;
-    }
-
-    if (result.data) {
-      showToast("Success", "Đã khôi phục tag");
-
-      setTags(prev =>
-        prev.map(tag =>
-          tag.id === id
-            ? { ...tag, isDelete: false }
-            : tag
-        )
-      );
-
-      setFilteredTags(prev =>
-        prev.map(tag =>
-          tag.id === id
-            ? { ...tag, isDelete: false }
-            : tag
-        )
-      );
-
-      setDeletedTags(prev => prev - 1);
-    }
-  };
-
-  const confirmRestore = async () => {
-    if (!selectedTagIdForRestore) return;
-
-    await handleReActivateTag(selectedTagIdForRestore);
-
-    setSelectedTagIdForRestore(null);
-  };
-
-  // ADD
   const handleTagAdded = (newTag: TagRep) => {
     setTags(prev => [...prev, newTag]);
-    setTotalTags(prev => prev + 1);
     setShowAddModal(false);
   };
 
-  // FORMAT DATE
   const formatDate = (date: Date | string) => {
     if (!date) return "";
     const dateObj = typeof date === "string" ? new Date(date) : date;
     return new Intl.DateTimeFormat("vi-VN").format(dateObj);
   };
 
-  // TABLE
   const tableHead: TableHeader = [
     "# ID",
     "Name",
@@ -186,7 +123,7 @@ const AdminTag = () => {
     "Actions",
   ];
 
-  const tableBody: TableBody = currentTags.map(tag => ([
+  const tableBody: TableBody = filteredTags.map(tag => ([
     {
       reactNode: (
         <div className="max-w-[160px] truncate" title={tag.id}>
@@ -200,13 +137,14 @@ const AdminTag = () => {
       reactNode: (
         <span
           onClick={() =>
-            !tag.isDelete &&
-            setSelectedTagIdForDelete(tag.id)
+            tag.isDelete
+              ? setSelectedTagIdForRestore(tag.id)
+              : setSelectedTagIdForDelete(tag.id)
           }
           className={`px-2 py-1 rounded cursor-pointer ${tag.isDelete
-              ? "text-red-600 bg-red-100"
-              : "text-green-600 bg-green-100"
-            }`}
+            ? "text-red-600 bg-red-100"
+            : "text-green-600 bg-green-100"
+          }`}
         >
           {tag.isDelete ? "Đã xóa" : "Hoạt động"}
         </span>
@@ -215,11 +153,11 @@ const AdminTag = () => {
     formatDate(tag.createdAt),
     {
       reactNode: (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {!tag.isDelete && (
             <button
               onClick={() => setSelectedTagForEdit(tag)}
-              className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50"
+              className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50"
             >
               Sửa
             </button>
@@ -235,7 +173,7 @@ const AdminTag = () => {
           ) : (
             <button
               onClick={() => setSelectedTagIdForRestore(tag.id)}
-              className="px-2 py-1 text-xs rounded ring-1 ring-green-300 text-green-600 hover:bg-green-50"
+              className="px-2 py-1 text-xs rounded border border-green-300 text-green-600 hover:bg-green-50"
             >
               Khôi phục
             </button>
@@ -247,7 +185,6 @@ const AdminTag = () => {
 
   return (
     <div className="px-8 pt-5 space-y-5">
-      {/* HEADER */}
       <div className="flex justify-between">
         <div>
           <h1 className="text-blue-700 text-2xl font-semibold">
@@ -269,12 +206,11 @@ const AdminTag = () => {
         </div>
       </div>
 
-      {/* STATS */}
       <div className="grid grid-cols-5 gap-5">
         <Stats
           icon={<i className="fa-solid fa-tags"></i>}
           title="Tổng tag"
-          des={`${totalTags} tag`}
+          des={`${stats.totalTags} tag`}
         />
 
         <Stats
@@ -282,11 +218,10 @@ const AdminTag = () => {
           iconColor="text-red-600"
           iconBg="bg-red-100"
           title="Tag đã xóa"
-          des={`${deletedTags} tag`}
+          des={`${stats.deletedTags} tag`}
         />
       </div>
 
-      {/* SEARCH + FILTER */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <InputSearch
@@ -307,44 +242,33 @@ const AdminTag = () => {
             </select>
           </div>
         </div>
+
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
+                      text-sm ring-gray-300">
+            <i className="fa-solid fa-arrow-down-wide-short"></i>
+            <span>Bộ lọc</span>
+          </button>
+
+          <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
+                      text-sm ring-gray-300">
+            <i className="fa-solid fa-gear"></i>
+          </button>
+        </div>
       </div>
 
-      {/* TABLE */}
-      {loading ? (
-        <div className="flex justify-center items-center py-10">
-          <p className="text-gray-500">Đang tải dữ liệu...</p>
-        </div>
-      ) : (
-        <>
-          <Table tableHead={tableHead} tableBody={tableBody} />
-
-          <div className="flex justify-between items-center mt-4">
-            <span className="text-sm text-gray-500">
-              Trang {currentPage} / {totalPages || 1}
-            </span>
-
-            <div className="flex gap-2">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => prev - 1)}
-                className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
-              >
-                Previous
-              </button>
-
-              <button
-                disabled={currentPage === totalPages || totalPages === 0}
-                onClick={() => setCurrentPage(prev => prev + 1)}
-                className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
+      <div>
+        {loading ? (
+          <div className="flex justify-center items-center py-10">
+            <p className="text-gray-500">Đang tải dữ liệu...</p>
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <Table tableHead={tableHead} tableBody={tableBody} />
+          </>
+        )}
+      </div>
 
-      {/* MODALS */}
       {showAddModal && (
         <AddTag
           onTagAdded={handleTagAdded}
@@ -387,7 +311,7 @@ const AdminTag = () => {
               </button>
 
               <button
-                onClick={confirmDelete}
+                onClick={() => handleDeleteTag(selectedTagIdForDelete)}
                 className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
               >
                 Xác nhận
@@ -417,7 +341,7 @@ const AdminTag = () => {
               </button>
 
               <button
-                onClick={confirmRestore}
+                onClick={() => selectedTagIdForRestore && handleReActivateTag(selectedTagIdForRestore)}
                 className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
               >
                 Xác nhận

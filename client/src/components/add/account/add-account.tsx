@@ -29,9 +29,6 @@ const AddAccount = ({ onAccountAdded, onClose }: AddAccountProps) => {
             onAccountAdded?.(result.data);
             // Reset form
             setAccountForm({ email: "", password: "", role: "User" });
-            setTimeout(() => {
-                onClose?.();
-            }, 500);
         }
     }
 
@@ -44,7 +41,7 @@ const AddAccount = ({ onAccountAdded, onClose }: AddAccountProps) => {
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
                     >
-                        ×
+                        x
                     </button>
                 </div>
 
@@ -53,7 +50,7 @@ const AddAccount = ({ onAccountAdded, onClose }: AddAccountProps) => {
                         <label htmlFor="email" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
                             Email
                         </label>
-                        <div className="px-3 ring-2 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700 flex items-center">
+                        <div className="px-3 ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700 flex items-center">
                             <i className="fa-solid fa-envelope text-gray-600"></i>
                             <input
                                 id="email"
@@ -72,7 +69,7 @@ const AddAccount = ({ onAccountAdded, onClose }: AddAccountProps) => {
                         <label htmlFor="password" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
                             Mật khẩu
                         </label>
-                        <div className="px-3 ring-2 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700 flex items-center">
+                        <div className="px-3 ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700 flex items-center">
                             <i className="fa-solid fa-key text-gray-600"></i>
                             <input
                                 id="password"
@@ -97,7 +94,7 @@ const AddAccount = ({ onAccountAdded, onClose }: AddAccountProps) => {
                         <label htmlFor="role" className="text-blue-700 font-medium after:content-['*'] after:text-red-700">
                             Vai trò
                         </label>
-                        <div className="ring-2 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700">
+                        <div className="ring-1 ring-gray-400 rounded-lg focus-within:ring-2 focus-within:ring-blue-700">
                             <select
                                 id="role"
                                 className="w-full none-input py-2 px-3 text-sm"

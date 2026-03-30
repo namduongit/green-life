@@ -26,7 +26,7 @@ async function main() {
     await prisma.carts.deleteMany();
     await prisma.orderItems.deleteMany();
     await prisma.orders.deleteMany();
-    await prisma.payments.deleteMany();
+    // await prisma.payments.deleteMany();
     await prisma.tagProducts.deleteMany();
     await prisma.properties.deleteMany();
     await prisma.products.deleteMany();
@@ -53,13 +53,14 @@ async function main() {
         ].map((name) => ({
             name: name,
             slug: toSlug(name),
+            status: 'Active',
         })),
     });
     const categories = await prisma.categories.findMany();
 
     // TAGS
     await prisma.tags.createMany({
-        data: ['Hot', 'New', 'Sale'].map((name) => ({ name })),
+        data: ['Hot', 'New', 'Sale'].map((name) => ({ name, status: 'Active' })),
     });
     const tags = await prisma.tags.findMany();
 
@@ -84,6 +85,7 @@ async function main() {
                             price: parseFloat(faker.commerce.price({ min: 1, max: 1000 }) || '0'),
                         },
                     },
+                    status: 'Active',
                 },
             });
         }),

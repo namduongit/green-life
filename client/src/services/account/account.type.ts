@@ -1,37 +1,66 @@
-import type {
-    Account,
-    Address,
-    CartItem,
-    Product,
-} from "../../lib/types/models.type";
+type AccountRep = {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    email: string;
+    role: string;
+    isLock: boolean;
+}
 
-type AccountRep = Account;
-type AddressRep = Omit<Address, "createdAt" | "updatedAt">;
-type AddressForm = Pick<Address, "province" | "city" | "home">;
-type CartItemRep = CartItem & {
-    product: Product;
-};
+type AddressRep = {
+    id: string;
+    province: string;
+    city: string;
+    home: string;
+    accountId: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
-type AddToCartForm = Pick<CartItem, "productId" | "quantity">;
+type AddressForm = {
+    province: string;
+    city: string;
+    home: string;
+}
 
-type CreateAccountForm = Pick<Account, "email" | "role"> & {
+type CartItemRep = {
+    id: string;
+    cartId: string;
+    productId: string;
+    quantity: number;
+    product?: {
+        id: string;
+        name: string;
+        price: number;
+        description: string;
+    };
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+type CartRep = {
+    id: string;
+    accountId: string;
+    items: CartItemRep[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+type AddToCartForm = {
+    productId: string;
+    quantity: number;
+}
+
+type CreateAccountForm = {
+    email: string;
     password: string;
-};
+    role: string;
+}
 
-type UpdateAccountForm = Partial<CreateAccountForm>;
+type UpdateAccountForm = {
+    email?: string;
+    password?: string;
+    role?: string;
+}
 
-type SearchAccountParams = {
-    page?: number;
-    pageSize?: number;
-};
-
-export type {
-    AccountRep,
-    AddressRep,
-    AddressForm,
-    CartItemRep,
-    AddToCartForm,
-    CreateAccountForm,
-    UpdateAccountForm,
-    SearchAccountParams,
-};
+export type { AccountRep, AddressRep, AddressForm, CartItemRep, CartRep, AddToCartForm, CreateAccountForm, UpdateAccountForm }

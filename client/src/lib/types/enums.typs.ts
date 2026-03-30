@@ -31,13 +31,13 @@ export const OrderPaymentStatus = {
 export type OrderPaymentStatus =
     (typeof OrderPaymentStatus)[keyof typeof OrderPaymentStatus];
 
-export const PaymentType = {
-    Momo: "Momo",
-    VNPay: "VNPay",
-    SeaPay: "SeaPay",
-} as const;
+export const OrderPaymentMethod = {
+  Cod: 'Cod',
+  Momo: 'Momo',
+  SePay: 'SePay'
+} as const
 
-export type PaymentType = (typeof PaymentType)[keyof typeof PaymentType];
+export type OrderPaymentMethod = (typeof OrderPaymentMethod)[keyof typeof OrderPaymentMethod];
 
 export const CommonStatus = {
     Active: "Active",

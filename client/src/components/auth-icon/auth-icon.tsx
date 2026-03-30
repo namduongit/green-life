@@ -28,7 +28,7 @@ const AuthIcon = () => {
                 <i className={`fa-regular fa-user text-lg hover:text-green-700 ${isOpen && "text-green-700"} transition-colors`}></i>
             </div>
             {isOpen && (
-                <div className="absolute bg-white shadow-lg rounded px-4 py-6 min-w-64 left-0 top-10 z-11 space-y-3">
+                <div className="absolute bg-white shadow-lg rounded px-4 py-6 min-w-64 -left-30 top-10 z-11 space-y-3">
                     <div className="absolute w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-white -top-2 left-4"></div>
                     {!state && (
                         <>

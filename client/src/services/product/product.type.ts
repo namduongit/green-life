@@ -1,44 +1,81 @@
-import type { CommonStatus } from "../../lib/types/enums.typs";
-import type {
-    Category,
-    Product,
-    ProductProperty,
-    Tags,
-} from "../../lib/types/models.type";
+type ProductStatus = "Active" | "UnActive" | "Other";
+type ProductUnit = "Gram" | "Kilogram" | "Other";
 
-export type GetProductRep = Omit<Product, "createdAt" | "updatedAt"> & {
-    property: Omit<ProductProperty, "createdAt" | "updatedAt">;
-    category: Pick<Category, "id" | "name">;
-    tagItems: {
-        tag: Tags;
-    }[];
+type ProductRep = {
+  id: string;
+  currentStock: number;
+  status: ProductStatus;
+  isDelete: boolean;
+
+  category: {
+    id: string;
+    name: string;
+  };
+
+  property?: PropertyRep;
+  tags?: string[];
+  categoryId: string;
 };
 
-export type QueryGetProducts = {
-    id?: string;
-    "property.id"?: string;
-    "property.id_in"?: string;
-    "property.name_contains"?: string;
-    "category.id"?: string;
-    page?: string;
-    order?: string;
-    pageSize?: string;
-    "tagItems.some.tag.id"?: string;
-    "property.description_contains"?: string;
+type PropertyRep = {
+  id: string;
+  productId: string;
+  urlImage: string;
+  name: string;
+  description: string;
+  weight: string;
+  unit: ProductUnit;
+  length: number;
+  width: number;
+  height: number;
+  price: number;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
-export type CreateProductForm = {
-    currentStock: number;
+type CreateProductForm = {
+  readonly currentStock: 0;
+  status: ProductStatus;
+  categoryId: string;
+  price: number;
+  tags: { id: string }[];
 
-    status: CommonStatus;
+  property: {
+    name: string;
+    urlImage: string;
+    description: string;
+    weight: string;
+    unit: ProductUnit;
+    length: number;
+    width: number;
+    height: number;
+  };
+};
 
-    categoryId: string;
+type UpdateProductForm = {
+  currentStock?: number;
+  status?: ProductStatus;
+  categoryId: string;
+  price: number;
+  tags: string[];
 
-    tags: {
-        id: string;
-    }[];
+  property: {
+    name: string;
+    urlImage: string;
+    description: string;
+    weight: string;
+    unit: ProductUnit;
+    length: number;
+    width: number;
+    height: number;
+  };
+};
 
-    property: Omit<ProductProperty, "createdAt" | "updatedAt" | "id">;
-
-    price: number;
+export type {
+  ProductRep,
+  PropertyRep,
+  CreateProductForm,
+  UpdateProductForm,
+  ProductStatus,
+  ProductUnit,
 };

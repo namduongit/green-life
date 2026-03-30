@@ -27,15 +27,14 @@ enum Role {
 enum Unit {
     Gram
     Kilogram
-    Other
 }
 
 enum OrderStatus {
     Pending
-    Confirm
+    Confirmed
     InTransit
-    Done
-    Cancled
+    Received
+    Cancelled
 }
 
 enum OrderPaymentStatus {
@@ -43,16 +42,15 @@ enum OrderPaymentStatus {
     Paid
 }
 
-enum PaymentType {
+enum OrderPaymentMethod {
+    Cod
     Momo
-    VNPay
-    SeaPay
+    SePay
 }
 
 enum CommonStatus {
     Active
     UnActive
-    Other
 }
 
 model Accounts {
@@ -63,8 +61,9 @@ model Accounts {
 
     cart Carts?
 
-    orders    Orders[]
-    addresses Addresses[]
+    orders           Orders[]
+    addresses        Addresses[]
+    checkoutHistory  CheckoutHistory[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -73,17 +72,20 @@ model Accounts {
 
 model Addresses {
     id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    accountId String   @unique @db.ObjectId
+    accountId String   @db.ObjectId
     account   Accounts @relation(fields: [accountId], references: [id])
+    fullName  String
+    phone     String
     province  String
-    city      String
-    home      String
+    ward      String
+    detail    String
+    isDefault Boolean  @default(false)
 }
 
 model Categories {
     id     String       @id @default(auto()) @map("_id") @db.ObjectId
     name   String
-    status CommonStatus @default(Other)
+    status CommonStatus
     slug   String       @unique
 
     products Products[]
@@ -96,7 +98,7 @@ model Categories {
 model Tags {
     id     String       @id @default(auto()) @map("_id") @db.ObjectId
     name   String
-    status CommonStatus @default(Other)
+    status CommonStatus
 
     tagItems TagProducts[]
 
@@ -107,13 +109,13 @@ model Tags {
 
 model Properties {
     id          String   @id @default(auto()) @map("_id") @db.ObjectId
-    productId   String   @unique @db.ObjectId
+    productId   String   @db.ObjectId  @unique
     Product     Products @relation(fields: [productId], references: [id])
     urlImage    String
     name        String
     description String
     weight      String
-    unit        Unit     @default(Other)
+    unit        Unit
     length      Int
     width       Int
     height      Int
@@ -126,7 +128,7 @@ model Properties {
 model Products {
   id           String       @id @default(auto()) @map("_id") @db.ObjectId
   currentStock Int          @default(0)
-  status       CommonStatus @default(Other)
+  status       CommonStatus
 
   categoryId String     @db.ObjectId
   category   Categories @relation(fields: [categoryId], references: [id])
@@ -145,13 +147,17 @@ model Products {
 model Orders {
     id            String             @id @default(auto()) @map("_id") @db.ObjectId
     totalAmount   Int
-    name          String
-    phone         String
-    email         String?
-    address       String
-    note          String
-    status        OrderStatus        @default(Pending)
-    paymentStatus OrderPaymentStatus @default(UnPaid)
+    totalQuantity Int
+
+    recipientName     String
+    recipientPhone    String
+    recipientProvince String
+    recipientWard     String
+    recipientDetail   String
+
+    paymentMethod OrderPaymentMethod
+    status        OrderStatus
+    paymentStatus OrderPaymentStatus
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -160,13 +166,14 @@ model Orders {
     account   Accounts @relation(fields: [accountId], references: [id])
 
     orderItems OrderItems[]
-    payment    Payments?
+    checkoutHistory  CheckoutHistory?
 }
 
 model OrderItems {
     id       String @id @default(auto()) @map("_id") @db.ObjectId
     quantity Int
     price    Int
+    amount   Int
 
     orderId String @db.ObjectId
     order   Orders @relation(fields: [orderId], references: [id])
@@ -183,19 +190,6 @@ model TagProducts {
 
     productId String   @db.ObjectId
     product   Products @relation(fields: [productId], references: [id])
-}
-
-model Payments {
-    id            String      @id @default(auto()) @map("_id") @db.ObjectId
-    type          PaymentType
-    transactionId String
-    totalAmount   Int
-    content       String
-    status        String
-    createAt      DateTime    @default(now())
-
-    orderId String @unique @db.ObjectId
-    order   Orders @relation(fields: [orderId], references: [id])
 }
 
 model Carts {
@@ -216,4 +210,18 @@ model CartItems {
 
     cartId String @db.ObjectId
     cart   Carts  @relation(fields: [cartId], references: [id])
+}
+
+model CheckoutHistory {
+    id          String      @id @default(auto()) @map("_id") @db.ObjectId
+    createdAt   DateTime    @default(now())
+    paymentType OrderPaymentMethod
+    amount      Int
+    requestId   String
+
+    orderId String  @db.ObjectId @unique
+    order   Orders  @relation(fields: [orderId], references: [id])
+
+    accountId String    @db.ObjectId
+    account   Accounts  @relation(fields: [accountId], references: [id])
 }

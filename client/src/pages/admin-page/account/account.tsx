@@ -1,60 +1,66 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback, act } from "react";
 import InputSearch from "../../../components/input/input-search/input-search";
 import Stats from "../../../components/stats/stats";
 import Table from "../../../components/table/table";
 import type { TableBody, TableHeader } from "../../../components/table/table";
-import { getAllAccounts, deleteAccount, type AccountRep } from "../../../services/account";
+import { getAllAccounts, type AccountRep } from "../../../services/account";
 import { useExecute } from "../../../hooks/execute";
 import { useToastContext } from "../../../contexts/toast-message/toast-message";
 import AddAccount from "../../../components/add/account/add-account";
+import EditAccount from "../../../components/edit/account/edit-account"; 9
+import { useModalConfirmContext } from "../../../contexts/modal-confirm/modal-confirm";
 
 const AdminAccount = () => {
-    const [searchInput, setSearchInput] = useState<string>("");
+    const { query, loading } = useExecute();
     const [accounts, setAccounts] = useState<AccountRep[]>([]);
-    const [filteredAccounts, setFilteredAccounts] = useState<AccountRep[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [totalAccounts, setTotalAccounts] = useState<number>(0);
-    const [lockedAccounts, setLockedAccounts] = useState<number>(0);
-    const [showAddModal, setShowAddModal] = useState<boolean>(false);
+    const [stats, setStats] = useState({
+        totalAccounts: 0,
+        activeAccounts: 0,
+        lockedAccounts: 0,
+    });
 
-    const { query } = useExecute();
-    const { showToast, showErrorResponse } = useToastContext();
-
-    // Fetch accounts on component mount
-    useEffect(() => {
-        const fetchAccounts = async () => {
-            setLoading(true);
-            const result = await query<AccountRep[]>(getAllAccounts());
-            if (result?.errors) {
-                showErrorResponse(result.errors);
-            } else if (result?.data) {
-                setAccounts(result.data);
-                setFilteredAccounts(result.data);
-                setTotalAccounts(result.data.length);
-                setLockedAccounts(result.data.filter(acc => acc.isLock).length);
-            }
-            setLoading(false);
-        };
-        fetchAccounts();
+    const fetchAccounts = useCallback(async () => {
+        const response = await query<AccountRep[]>(getAllAccounts());
+        if (response && response.data) {
+            setAccounts(response.data);
+        }
     }, []);
 
-    // Filter accounts based on search input
     useEffect(() => {
-        const filtered = accounts.filter(account =>
-            account.email.toLowerCase().includes(searchInput.toLowerCase()) ||
-            account.id.toLowerCase().includes(searchInput.toLowerCase())
-        );
-        setFilteredAccounts(filtered);
-    }, [searchInput, accounts]);
+        void fetchAccounts();
+    }, []);
 
-    const handleDeleteAccount = async (id: string) => {
+    useEffect(() => {
+        const total = accounts.length;
+        const locked = accounts.filter(acc => acc.isLock).length;
+        const active = total - locked;
+        setStats({
+            totalAccounts: total,
+            activeAccounts: active,
+            lockedAccounts: locked,
+        });
+    }, [accounts]);
+
+
+    const [searchInput, setSearchInput] = useState<string>("");
+    const [roleFilter, setRoleFilter] = useState<string>("");
+
+    const [currentPage, setCurrentPage] = useState<number>(1);
+
+    const [showAddAccount, setShowAddModal] = useState<boolean>(false);
+    const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<AccountRep | null>(null);
+
+    const handleDeactivateAccount = async (id: string) => {
 
     }
 
+    const handleActivateAccount = async (id: string) => {
+       
+    }
+
     const handleAccountAdded = (newAccount: AccountRep) => {
-        setAccounts([...accounts, newAccount]);
-        setTotalAccounts(totalAccounts + 1);
-        setShowAddModal(false);
+
     }
 
     const formatDate = (date: Date | string) => {
@@ -64,12 +70,31 @@ const AdminAccount = () => {
     };
 
     const tableHead: TableHeader = ["# UID", "Email", "Role", "Status", "Create date", "Actions"];
-    const tableBody: TableBody = filteredAccounts.map((account) => ([
-        { string: { content: account.id }, clipboard: account.id },
-        account.email,
+    const tableBody: TableBody = accounts.map((account) => ([
         {
             reactNode: (
-                <div>
+                <div
+                    className="max-w-45 truncate"
+                    title={account.id}
+                >
+                    {account.id}
+                </div>
+            ),
+            clipboard: account.id
+        },
+        {
+            reactNode: (
+                <div
+                    className="max-w-50 truncate"
+                    title={account.email}
+                >
+                    {account.email}
+                </div>
+            )
+        },
+        {
+            reactNode: (
+                <div    >
                     <span className={`px-2 py-1 rounded ${account.role?.toUpperCase() === "ADMIN" ? "text-blue-600 bg-blue-100" : "text-gray-600 bg-gray-100"}`}>
                         {account.role?.toUpperCase() === "ADMIN" ? "Quản trị viên" : "Người dùng"}
                     </span>
@@ -78,8 +103,20 @@ const AdminAccount = () => {
         },
         {
             reactNode: (
-                <div onClick={() => handleDeleteAccount(account.id)}>
-                    <span className={`px-2 py-1 rounded ${!account.isLock ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"}`}>
+                <div
+                    onClick={() =>
+                        account.isLock
+                            ? handleActivateAccount(account.id)
+                            : handleDeactivateAccount(account.id)
+                    }
+                    className="cursor-pointer"
+                >
+                    <span
+                        className={`px-2 py-1 rounded ${!account.isLock
+                            ? "text-green-600 bg-green-100"
+                            : "text-red-600 bg-red-100"
+                            }`}
+                    >
                         {!account.isLock ? "Hoạt động" : "Khóa"}
                     </span>
                 </div>
@@ -89,13 +126,24 @@ const AdminAccount = () => {
         {
             reactNode: (
                 <div className="flex items-center gap-2">
-                    <button className="px-2 py-1 text-xs rounded ring-1 ring-gray-300 hover:bg-gray-50">Sửa</button>
                     <button
-                        onClick={() => handleDeleteAccount(account.id)}
-                        className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600 hover:bg-red-50"
-                    >
-                        Khóa
-                    </button>
+                        onClick={() => setSelectedAccountForEdit(account)}
+                        className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50">Sửa</button>
+                    {account.isLock ? (
+                        <button
+                            onClick={() => handleActivateAccount(account.id)}
+                            className="px-2 py-1 text-xs rounded border border-green-300 text-green-600 hover:bg-green-50"
+                        >
+                            Mở khóa
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => handleDeactivateAccount(account.id)}
+                            className="px-2 py-1 text-xs rounded ring-1 ring-red-300 text-red-600 hover:bg-red-50"
+                        >
+                            Khóa
+                        </button>
+                    )}
                 </div>
             )
         },
@@ -111,7 +159,7 @@ const AdminAccount = () => {
 
                 <div className="flex gap-3 items-center">
                     <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring-2 
-                        text-sm ring-gray-300">
+                            text-sm ring-gray-300">
                         <i className="fa-solid fa-arrow-up-from-bracket"></i>
                         <span>Xuất file</span>
                     </button>
@@ -119,7 +167,7 @@ const AdminAccount = () => {
                     <button
                         onClick={() => setShowAddModal(true)}
                         className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded
-                        text-sm ring-2 ring-blue-600 hover:bg-white hover:text-blue-600 transition">
+                            text-sm ring-2 ring-blue-600 hover:bg-white hover:text-blue-600 transition">
                         <i className="fa-solid fa-user-plus"></i>
                         <span>Thêm tài khoản</span>
                     </button>
@@ -130,14 +178,21 @@ const AdminAccount = () => {
                 <Stats
                     icon={<i className="fa-regular fa-rectangle-list"></i>}
                     title="Tổng số tài khoản"
-                    des={`${totalAccounts} tài khoản`} />
+                    des={`${stats.totalAccounts} tài khoản`} />
 
                 <Stats
                     icon={<i className="fa-solid fa-lock"></i>}
                     iconColor="text-red-600"
                     iconBg="bg-red-100"
                     title="Tài khoản bị khóa"
-                    des={`${lockedAccounts} tài khoản`} />
+                    des={`${stats.lockedAccounts} tài khoản`} />
+
+                <Stats
+                    icon={<i className="fa-solid fa-lock-open"></i>}
+                    iconColor="text-green-600"
+                    iconBg="bg-green-100"
+                    title="Tài khoản hoạt động"
+                    des={`${stats.activeAccounts} tài khoản`} />
             </div>
 
             <div className="flex justify-between items-center">
@@ -148,10 +203,13 @@ const AdminAccount = () => {
                         {/* Search option */}
                         <div>
                             <div className="ring-1 rounded py-1 px-2 ring-gray-300 flex items-center w-60">
-                                <select className="w-full none-input text-sm py-1">
+                                <select
+                                    value={roleFilter}
+                                    onChange={(e) => setRoleFilter(e.target.value)}
+                                    className="w-full none-input text-sm py-1">
                                     <option value="">Tất cả</option>
-                                    <option value="admin">Quản trị viên</option>
-                                    <option value="user">Người dùng</option>
+                                    <option value="ADMIN">Quản trị viên</option>
+                                    <option value="USER">Người dùng</option>
                                 </select>
                             </div>
                         </div>
@@ -161,18 +219,18 @@ const AdminAccount = () => {
                 <div className="flex gap-2">
                     <div>
                         <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
-                            text-sm ring-gray-300">
+                                text-sm ring-gray-300">
                             <i className="fa-solid fa-arrow-down-wide-short"></i>
                             <span>Bộ lọc</span>
                         </button>
 
                         <div>
-                            
+
                         </div>
                     </div>
 
                     <button className="flex items-center gap-2 bg-white px-3 py-1 rounded ring 
-                            text-sm ring-gray-300">
+                                text-sm ring-gray-300">
                         <i className="fa-solid fa-gear"></i>
                     </button>
                 </div>
@@ -184,17 +242,57 @@ const AdminAccount = () => {
                         <p className="text-gray-500">Đang tải dữ liệu...</p>
                     </div>
                 ) : (
-                    <Table
-                        tableHead={tableHead}
-                        tableBody={tableBody}
-                    />
+                    <>
+                        <Table
+                            tableHead={tableHead}
+                            tableBody={tableBody}
+                        />
+                        <div className="flex justify-between items-center mt-4">
+                            <span className="text-sm text-gray-500">
+                                Trang {currentPage} / {accounts.length || 1}
+                            </span>
+
+                            <div className="flex gap-2">
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => prev - 1)}
+                                    className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
+                                >
+                                    Previous
+                                </button>
+
+                                <button
+                                    disabled={currentPage === accounts.length || accounts.length === 0}
+                                    onClick={() => setCurrentPage(prev => prev + 1)}
+                                    className="px-3 py-1 text-sm rounded ring-1 ring-gray-300 disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </>
                 )}
             </div>
 
-            {showAddModal && (
+            {showAddAccount && (
                 <AddAccount
                     onAccountAdded={handleAccountAdded}
                     onClose={() => setShowAddModal(false)}
+                />
+            )}
+
+            {selectedAccountForEdit && (
+                <EditAccount
+                    account={selectedAccountForEdit}
+                    onClose={() => setSelectedAccountForEdit(null)}
+                    onUpdated={(updated) => {
+                        setAccounts(prev =>
+                            prev.map(acc =>
+                                acc.id === updated.id ? updated : acc
+                            )
+                        );
+                        setSelectedAccountForEdit(null);
+                    }}
                 />
             )}
         </div>

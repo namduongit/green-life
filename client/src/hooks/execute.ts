@@ -39,7 +39,7 @@ export const useExecute = () => {
             setLoading(false);
             return {
                 data: null,
-                errors: error?.response?.data?.error || error.message
+                errors: error?.error
             }
         }
         return null;

@@ -1,7 +1,14 @@
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState, useEffect } from "react";
 import { NavLink } from "react-router";
 import { useAuthContext } from "../../contexts/auth/auth";
 import { useToastContext } from "../../contexts/toast-message/toast-message";
+import { getAddresses, createAddress } from "../../services/address";
+import { useExecute } from "../../hooks/execute";
+import UserInfo from "./components/UserInfo";
+import Menu from "./components/Menu";
+import AddressList from "./components/AddressList";
+import PasswordForm from "./components/PasswordForm";
+import NotificationSetting from "./components/NotificationSetting";
 
 interface AddressItem {
     id: string;
@@ -12,29 +19,15 @@ interface AddressItem {
     isPrimary?: boolean;
 }
 
-const demoAddresses: AddressItem[] = [
-    {
-        id: "addr-1",
-        label: "Nhà riêng",
-        recipient: "Lê Minh Khôi",
-        phone: "0903 123 456",
-        detail: "24/3 Nguyễn Thông, Phường 6, Quận 3, TP. Hồ Chí Minh",
-        isPrimary: true
-    },
-    {
-        id: "addr-2",
-        label: "Văn phòng",
-        recipient: "Lê Minh Khôi",
-        phone: "0903 888 111",
-        detail: "Tầng 12, Toà nhà GreenLife, Quận 1, TP. Hồ Chí Minh"
-    }
-];
 
-const emptyAddress: Omit<AddressItem, "id"> = {
+
+const emptyAddress: Omit<AddressItem, "id"> & { ward: string; isDefault: boolean } = {
     label: "",
     recipient: "",
     phone: "",
-    detail: ""
+    detail: "",
+    ward: "",
+    isDefault: false
 };
 
 const emptyPasswordForm = {
@@ -46,7 +39,32 @@ const emptyPasswordForm = {
 const InfoPage = () => {
     const { state } = useAuthContext();
     const { showToast } = useToastContext();
-    const [addresses, setAddresses] = useState<AddressItem[]>(demoAddresses);
+    const [addresses, setAddresses] = useState<AddressItem[]>([]);
+    const [selectedMenu, setSelectedMenu] = useState<string>("address");
+    const { query } = useExecute();
+    // Lấy địa chỉ thật từ server
+    useEffect(() => {
+        const fetchAddresses = async () => {
+            if (!state?.uid) {
+                setAddresses([]);
+                return;
+            }
+            const result = await query(getAddresses(state.uid));
+            if (result?.data && Array.isArray(result.data)) {
+                setAddresses(result.data.map((addr: any) => ({
+                    id: addr.id,
+                    label: addr.isDefault ? "Nhà riêng" : "Khác", // hoặc cho phép người dùng đặt label
+                    recipient: addr.fullName,
+                    phone: addr.phone,
+                    detail: `${addr.detail}${addr.ward ? ", " + addr.ward : ""}${addr.province ? ", " + addr.province : ""}`,
+                    isPrimary: !!addr.isDefault
+                })));
+            } else {
+                setAddresses([]);
+            }
+        };
+        fetchAddresses();
+    }, [state?.uid, query]);
     const [addressForm, setAddressForm] = useState(emptyAddress);
     const [passwordForm, setPasswordForm] = useState(emptyPasswordForm);
 
@@ -66,19 +84,41 @@ const InfoPage = () => {
         );
     }
 
-    const handleAddAddress = (event: FormEvent<HTMLFormElement>) => {
+    const handleAddAddress = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (!addressForm.label || !addressForm.recipient || !addressForm.phone || !addressForm.detail) {
+        if (!addressForm.label || !addressForm.recipient || !addressForm.phone || !addressForm.detail || !addressForm.ward) {
             showToast("Error", "Vui lòng điền đầy đủ thông tin địa chỉ.");
             return;
         }
-        const newAddress: AddressItem = {
-            id: `addr-${Date.now()}`,
-            ...addressForm
+        if (!state?.uid) return;
+        // Chuẩn hóa payload cho API
+        const payload = {
+            fullName: addressForm.recipient,
+            phone: addressForm.phone,
+            province: addressForm.label,
+            ward: addressForm.ward,
+            detail: addressForm.detail,
+            isDefault: addressForm.isDefault
         };
-        setAddresses((prev) => [newAddress, ...prev]);
-        setAddressForm(emptyAddress);
-        showToast("Success", "Đã thêm địa chỉ mới (demo).");
+        const result = await query(createAddress(state.uid, payload));
+        if (result?.errors) {
+            showToast("Error", Array.isArray(result.errors) ? result.errors[0] : result.errors);
+        } else {
+            showToast("Success", "Đã thêm địa chỉ mới.");
+            setAddressForm(emptyAddress);
+            // Reload lại danh sách địa chỉ
+            const reload = await query(getAddresses(state.uid));
+            if (reload?.data && Array.isArray(reload.data)) {
+                setAddresses(reload.data.map((addr: any) => ({
+                    id: addr.id,
+                    label: addr.isDefault ? "Nhà riêng" : "Khác",
+                    recipient: addr.fullName,
+                    phone: addr.phone,
+                    detail: `${addr.detail}${addr.ward ? ", " + addr.ward : ""}${addr.province ? ", " + addr.province : ""}`,
+                    isPrimary: !!addr.isDefault
+                })));
+            }
+        }
     };
 
     const handleRemoveAddress = (id: string) => {
@@ -110,148 +150,103 @@ const InfoPage = () => {
 
     return (
         <div className="pb-20">
-            <div className="sm-container mx-auto py-10 space-y-8">
-                <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 className="text-xl font-semibold text-green-700">Thông tin cá nhân</h2>
-                    <p className="text-sm text-gray-500">Thông tin được đồng bộ từ hồ sơ đăng ký.</p>
-                    <div className="mt-4 grid gap-4 md:grid-cols-2">
-                        <div className="rounded-xl border border-gray-100 bg-green-50 p-4">
-                            <p className="text-xs uppercase tracking-wide text-gray-500">Email</p>
-                            <p className="text-lg font-semibold text-green-800">{personalEmail}</p>
-                        </div>
-                        <div className="rounded-xl border border-dashed border-gray-200 p-4">
-                            <p className="text-xs uppercase tracking-wide text-gray-500">UID</p>
-                            <p className="text-lg font-semibold text-gray-700">{state.uid}</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
-                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h2 className="text-xl font-semibold text-green-700">Địa chỉ nhận hàng</h2>
-                            <p className="text-sm text-gray-500">Quản lý địa chỉ giao hàng của bạn. Dữ liệu sẽ được kết nối với bước Checkout.</p>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {addresses.map((address) => (
-                            <div key={address.id} className="rounded-xl border border-gray-200 p-4 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-gray-800">{address.label}</h3>
-                                    {address.isPrimary && <span className="text-xs rounded bg-green-700 px-2 py-0.5 text-white">Mặc định</span>}
-                                </div>
-                                <p className="text-sm text-gray-600">{address.recipient} · {address.phone}</p>
-                                <p className="text-sm text-gray-600">{address.detail}</p>
-                                <div className="flex flex-wrap gap-3">
-                                    {!address.isPrimary && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSetPrimary(address.id)}
-                                            className="text-sm font-medium text-green-700 hover:underline"
-                                        >
-                                            Đặt làm mặc định
-                                        </button>
-                                    )}
+            <div className="sm-container mx-auto py-10">
+                <div className="flex flex-col md:flex-row gap-8">
+                    <aside className="w-full md:w-[320px] shrink-0 flex flex-col items-center gap-6">
+                        <UserInfo email={personalEmail} />
+                        <Menu selected={selectedMenu} onSelect={setSelectedMenu} />     
+                    </aside>
+                    <main className="flex-1 w-full flex flex-col gap-6 min-w-0">
+                        {selectedMenu === "address" && (
+                            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
+                                <h2 className="text-xl font-semibold text-green-700 mb-2">Địa chỉ nhận hàng</h2>
+                                <p className="text-sm text-gray-500 mb-4">Quản lý địa chỉ giao hàng của bạn. Dữ liệu sẽ được kết nối với bước Checkout.</p>
+                                <AddressList addresses={addresses} onSetPrimary={handleSetPrimary} onRemove={handleRemoveAddress} />
+                                <form className="rounded-xl border border-dashed border-gray-300 p-4 space-y-4 mt-6" onSubmit={handleAddAddress}>
+                                    <h3 className="text-lg font-semibold text-gray-800">Thêm địa chỉ mới</h3>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label className="text-sm text-gray-500">Tỉnh/Thành phố</label>
+                                            <input
+                                                type="text"
+                                                value={addressForm.label}
+                                                onChange={event => setAddressForm((prev) => ({ ...prev, label: event.target.value }))}
+                                                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm text-gray-500">Phường/Xã</label>
+                                            <input
+                                                type="text"
+                                                value={addressForm.ward}
+                                                onChange={event => setAddressForm((prev) => ({ ...prev, ward: event.target.value }))}
+                                                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm text-gray-500">Người nhận</label>
+                                            <input
+                                                type="text"
+                                                value={addressForm.recipient}
+                                                onChange={event => setAddressForm((prev) => ({ ...prev, recipient: event.target.value }))}
+                                                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm text-gray-500">Số điện thoại</label>
+                                            <input
+                                                type="text"
+                                                value={addressForm.phone}
+                                                onChange={event => setAddressForm((prev) => ({ ...prev, phone: event.target.value }))}
+                                                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="text-sm text-gray-500">Địa chỉ chi tiết</label>
+                                            <input
+                                                type="text"
+                                                value={addressForm.detail}
+                                                onChange={event => setAddressForm((prev) => ({ ...prev, detail: event.target.value }))}
+                                                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={addressForm.isDefault}
+                                                onChange={event => setAddressForm((prev) => ({ ...prev, isDefault: event.target.checked }))}
+                                                className="accent-green-700 w-5 h-5"
+                                            />
+                                            <label className="text-sm text-gray-700">Đặt làm mặc định</label>
+                                        </div>
+                                    </div>
                                     <button
-                                        type="button"
-                                        onClick={() => handleRemoveAddress(address.id)}
-                                        className="text-sm font-medium text-red-600 hover:underline"
+                                        type="submit"
+                                        className="rounded-lg bg-green-700 px-4 py-2 font-semibold text-white hover:bg-green-800"
                                     >
-                                        Xoá địa chỉ
+                                        Thêm địa chỉ
                                     </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <form className="rounded-xl border border-dashed border-gray-300 p-4 space-y-4" onSubmit={handleAddAddress}>
-                        <h3 className="text-lg font-semibold text-gray-800">Thêm địa chỉ mới (demo)</h3>
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div>
-                                <label className="text-sm text-gray-500">Tên hiển thị</label>
-                                <input
-                                    type="text"
-                                    value={addressForm.label}
-                                    onChange={(event) => setAddressForm((prev) => ({ ...prev, label: event.target.value }))}
-                                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
+                                </form>
+                            </section>
+                        )}
+                        {selectedMenu === "password" && (
+                            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                                <h2 className="text-xl font-semibold text-green-700 mb-2">Đổi mật khẩu</h2>
+                                <p className="text-sm text-gray-500 mb-4">Tăng cường bảo mật cho tài khoản của bạn.</p>
+                                <PasswordForm
+                                    currentPassword={passwordForm.currentPassword}
+                                    newPassword={passwordForm.newPassword}
+                                    confirmPassword={passwordForm.confirmPassword}
+                                    onChange={(field, value) => setPasswordForm((prev) => ({ ...prev, [field]: value }))}
+                                    onSubmit={handlePasswordChange}
                                 />
-                            </div>
-                            <div>
-                                <label className="text-sm text-gray-500">Người nhận</label>
-                                <input
-                                    type="text"
-                                    value={addressForm.recipient}
-                                    onChange={(event) => setAddressForm((prev) => ({ ...prev, recipient: event.target.value }))}
-                                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm text-gray-500">Số điện thoại</label>
-                                <input
-                                    type="text"
-                                    value={addressForm.phone}
-                                    onChange={(event) => setAddressForm((prev) => ({ ...prev, phone: event.target.value }))}
-                                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="text-sm text-gray-500">Địa chỉ chi tiết</label>
-                                <input
-                                    type="text"
-                                    value={addressForm.detail}
-                                    onChange={(event) => setAddressForm((prev) => ({ ...prev, detail: event.target.value }))}
-                                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
-                                />
-                            </div>
-                        </div>
-                        <button
-                            type="submit"
-                            className="rounded-lg bg-green-700 px-4 py-2 font-semibold text-white hover:bg-green-800"
-                        >
-                            Thêm địa chỉ
-                        </button>
-                    </form>
-                </section>
-
-                <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 className="text-xl font-semibold text-green-700">Đổi mật khẩu</h2>
-                    <p className="text-sm text-gray-500">Tăng cường bảo mật cho tài khoản của bạn.</p>
-                    <form className="mt-4 grid gap-4 md:grid-cols-3" onSubmit={handlePasswordChange}>
-                        <div>
-                            <label className="text-sm text-gray-500">Mật khẩu hiện tại</label>
-                            <input
-                                type="password"
-                                value={passwordForm.currentPassword}
-                                onChange={(event) => setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
-                                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-sm text-gray-500">Mật khẩu mới</label>
-                            <input
-                                type="password"
-                                value={passwordForm.newPassword}
-                                onChange={(event) => setPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
-                                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-sm text-gray-500">Nhập lại mật khẩu</label>
-                            <input
-                                type="password"
-                                value={passwordForm.confirmPassword}
-                                onChange={(event) => setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
-                                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
-                            />
-                        </div>
-                        <div className="md:col-span-3">
-                            <button type="submit" className="rounded-lg bg-green-700 px-4 py-2 font-semibold text-white hover:bg-green-800">
-                                Cập nhật mật khẩu
-                            </button>
-                        </div>
-                    </form>
-                </section>
+                            </section>
+                        )}
+                        {selectedMenu === "notification" && (
+                            <NotificationSetting />
+                        )}
+                    </main>
+                </div>
             </div>
         </div>
     );

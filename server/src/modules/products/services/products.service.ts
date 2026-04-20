@@ -50,6 +50,10 @@ export class ProductsService {
 
     async getAllProducts(
         filter: SearchParamsQuery<ProductsWhereInput, ProductsOrderByWithRelationInput>,
+        /**
+         * 
+         * 
+         */
     ): Promise<ProductListResponseDto> {
         const where = this.buildWhereClause(filter.where);
 

@@ -3,12 +3,16 @@ import { useNavigate } from "react-router";
 import LayerCart from "../../components/layer-cart/layer-cart";
 import { useCart } from "../../contexts/cart/cart";
 import { useToastContext } from "../../contexts/toast-message/toast-message";
+import { useExecute } from "../../hooks/execute";
+import { createOrder } from "../../services/order/order.service";
+import { getAddresses } from "../../services/address";
+import { OrderPaymentMethod } from "../../lib/types/enums.typs";
+import { useAuthContext } from "../../contexts/auth/auth";
 
 interface AddressForm {
     fullName: string;
     phone: string;
     city: string;
-    district: string;
     ward: string;
     detail: string;
 }
@@ -21,35 +25,12 @@ interface SavedAddress extends AddressForm {
 
 type PaymentMethod = "cod" | "momo" | "sepay";
 
-const mockSavedAddresses: SavedAddress[] = [
-    {
-        id: "home",
-        label: "Nhà riêng",
-        fullName: "Lê Minh Khôi",
-        phone: "0903 123 456",
-        city: "TP. Hồ Chí Minh",
-        district: "Quận 3",
-        ward: "Phường 6",
-        detail: "24/3 Nguyễn Thông",
-        isDefault: true
-    },
-    {
-        id: "office",
-        label: "Văn phòng",
-        fullName: "Lê Minh Khôi",
-        phone: "0903 888 111",
-        city: "TP. Hồ Chí Minh",
-        district: "Quận 1",
-        ward: "Phường Bến Nghé",
-        detail: "Tầng 12, Toà nhà GreenLife"
-    }
-];
+
 
 const initialAddressForm: AddressForm = {
     fullName: "",
     phone: "",
     city: "",
-    district: "",
     ward: "",
     detail: ""
 };
@@ -62,10 +43,12 @@ const paymentOptions: { id: PaymentMethod; title: string; description: string }[
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
-    const { cartItems } = useCart();
+    const { cartItems, clearCart } = useCart();
     const { showToast } = useToastContext();
+    const { query } = useExecute();
+    const { state: authState } = useAuthContext();
 
-    const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+    const [addresses, setAddresses] = useState<any[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
     const [addressForm, setAddressForm] = useState<AddressForm>(initialAddressForm);
     const [loadingAddresses, setLoadingAddresses] = useState(true);
@@ -75,32 +58,55 @@ const CheckoutPage = () => {
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [formMessage, setFormMessage] = useState<string | null>(null);
 
-    const loadAddresses = () => {
+    const loadAddresses = async () => {
         setLoadingAddresses(true);
-        setTimeout(() => {
-            setAddresses(mockSavedAddresses);
-            setSelectedAddressId((prev) => (prev === "new" && mockSavedAddresses.length > 0 ? mockSavedAddresses[0].id : prev));
+        if (!authState?.uid) {
+            setAddresses([]);
             setLoadingAddresses(false);
-        }, 400);
+            return;
+        }
+        const result = await query(getAddresses(authState.uid));
+        console.log("Loaded addresses:", result);
+        if (result?.data && Array.isArray(result.data)) {
+            // Map lại dữ liệu cho đúng với UI
+            const mapped = result.data.map((addr: any) => ({
+                id: addr.id,
+                label: addr.isDefault ? "Nhà riêng" : "Khác",
+                isDefault: !!addr.isDefault,
+                fullName: addr.fullName || "",
+                phone: addr.phone || "",
+                city: addr.province || "",
+                ward: addr.ward || "",
+                detail: addr.detail || ""
+            }));
+            setAddresses(mapped);
+            // Ưu tiên chọn địa chỉ mặc định, nếu không có thì chọn địa chỉ đầu tiên
+            const defaultAddr = mapped.find((addr: any) => addr.isDefault);
+            setSelectedAddressId(defaultAddr ? defaultAddr.id : (mapped[0]?.id || "new"));
+        } else {
+            setAddresses([]);
+        }
+        setLoadingAddresses(false);
     };
 
     useEffect(() => {
         loadAddresses();
-    }, []);
+        // eslint-disable-next-line
+    }, [authState?.uid]);
 
     useEffect(() => {
         if (selectedAddressId === "new") {
+            setAddressForm(initialAddressForm);
             return;
         }
         const matched = addresses.find((addr) => addr.id === selectedAddressId);
         if (matched) {
             setAddressForm({
-                fullName: matched.fullName,
-                phone: matched.phone,
-                city: matched.city,
-                district: matched.district,
-                ward: matched.ward,
-                detail: matched.detail
+                fullName: matched.fullName || "",
+                phone: matched.phone || "",
+                city: matched.city || "",
+                ward: matched.ward || "",
+                detail: matched.detail || ""
             });
         }
     }, [selectedAddressId, addresses]);
@@ -126,7 +132,10 @@ const CheckoutPage = () => {
     const discountValue = appliedCode ? Math.round(subtotal * 0.05) : 0;
     const total = subtotal + vat + shippingEstimate - discountValue;
 
-    const isAddressValid = Object.values(addressForm).every((value) => value.trim().length > 0);
+    const missingFields = Object.entries(addressForm)
+        .filter(([_, value]) => value.trim().length === 0)
+        .map(([key]) => key);
+    const isAddressValid = missingFields.length === 0;
     const canConfirm = isAddressValid && cartItems.length > 0;
 
     const handleConfirm = () => {
@@ -137,23 +146,50 @@ const CheckoutPage = () => {
         }
         setFormMessage(null);
         setIsConfirmed(true);
-        showToast("Success", "Thông tin đơn hàng đã được xác nhận.");
+        showToast("Success", "Thông tin đã được xác nhận. Tiếp tục thanh toán để hoàn tất đơn hàng.");
     };
 
-    const handlePlaceOrder = () => {
+    const handlePlaceOrder = async () => {
         if (!isConfirmed) {
             setFormMessage("Bạn cần xác nhận thông tin trước khi thanh toán.");
             showToast("Note", "Xác nhận thông tin để tiếp tục thanh toán.");
             return;
         }
-        showToast("Success", "Đang chuyển tới cổng thanh toán...");
-        navigate("/page/payment", {
-            state: {
-                paymentMethod,
-                address: addressForm,
-                discountCode: appliedCode ?? undefined
+        // Chuyển paymentMethod sang đúng enum
+        let paymentMethodEnum: OrderPaymentMethod = OrderPaymentMethod.Cod;
+        if (paymentMethod === "momo") paymentMethodEnum = OrderPaymentMethod.Momo;
+        else if (paymentMethod === "sepay") paymentMethodEnum = OrderPaymentMethod.SePay;
+
+        const orderPayload = {
+            recipientName: addressForm.fullName,
+            recipientPhone: addressForm.phone,
+            recipientProvince: addressForm.city,
+            recipientWard: addressForm.ward,
+            recipientDetail: addressForm.detail,
+            orderItem: cartItems.map(item => ({
+                productId: item.product.id,
+                quantity: item.quantity
+            })),
+            paymentMethod: paymentMethodEnum
+        };
+        const result = await query(createOrder(orderPayload));
+        if (result?.errors) {
+            if (Array.isArray(result.errors)) {
+                showToast("Error", result.errors[0] || "Tạo đơn hàng thất bại.");
+            } else {
+                showToast("Error", result.errors || "Tạo đơn hàng thất bại.");
             }
-        });
+        } else if (result?.data) {
+            showToast("Success", "Đơn hàng đã được tạo thành công!");
+            await clearCart();
+            navigate("/page/payment", {
+                state: {
+                    paymentMethod,
+                    address: addressForm,
+                    discountCode: appliedCode ?? undefined
+                }
+            });
+        }
     };
 
     const handleApplyDiscount = () => {
@@ -218,7 +254,7 @@ const CheckoutPage = () => {
                                                     {addr.fullName} · {addr.phone}
                                                 </p>
                                                 <p className="text-sm text-gray-600">
-                                                    {addr.detail}, {addr.ward}, {addr.district}, {addr.city}
+                                                    {addr.detail}{addr.ward ? ", " + addr.ward : ""}{addr.city ? ", " + addr.city : ""}
                                                 </p>
                                             </div>
                                         </label>
@@ -262,15 +298,6 @@ const CheckoutPage = () => {
                                     type="text"
                                     value={addressForm.city}
                                     onChange={(e) => handleAddressInput("city", e.target.value)}
-                                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm text-gray-600">Quận/Huyện</label>
-                                <input
-                                    type="text"
-                                    value={addressForm.district}
-                                    onChange={(e) => handleAddressInput("district", e.target.value)}
                                     className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-green-700 focus:outline-none"
                                 />
                             </div>
@@ -329,6 +356,13 @@ const CheckoutPage = () => {
                             <p className="text-sm text-gray-500">Kiểm tra lại địa chỉ, phương thức thanh toán và đơn hàng trước khi thanh toán.</p>
                         </div>
                         {formMessage && <p className="text-sm text-red-600">{formMessage}</p>}
+                        {!isAddressValid && (
+                            <ul className="text-sm text-red-600 list-disc list-inside">
+                                {missingFields.map((field) => (
+                                    <li key={field}>Thiếu thông tin: {field}</li>
+                                ))}
+                            </ul>
+                        )}
                         <button
                             type="button"
                             onClick={handleConfirm}

@@ -19,6 +19,7 @@ const LoginPage = () => {
     const submitForm = async () => {
         const result = await query(login(loginForm));
         if (result?.errors) {
+            console.log(result?.errors)
             showErrorResponse(result.errors)
         } else if (result?.data) {
             showToast("Success", "Đăng nhập thành công");

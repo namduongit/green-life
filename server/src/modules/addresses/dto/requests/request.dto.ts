@@ -3,23 +3,23 @@ import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 export class CreateAddressDto {
     @IsString({ message: 'Họ tên phải là chuỗi' })
     @IsNotEmpty({ message: 'Họ tên không được để trống' })
-    fullName: string;
+    fullName!: string;
 
     @IsString({ message: 'Số điện thoại phải là chuỗi' })
     @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
-    phone: string;
+    phone!: string;
 
     @IsString({ message: 'Tỉnh/Thành phố phải là chuỗi' })
     @IsNotEmpty({ message: 'Tỉnh/Thành phố không được để trống' })
-    province: string;
+    province!: string;
 
     @IsString({ message: 'Phường/Xã phải là chuỗi' })
     @IsNotEmpty({ message: 'Phường/Xã không được để trống' })
-    ward: string;
+    ward!: string;
 
     @IsString({ message: 'Địa chỉ cụ thể phải là chuỗi' })
     @IsNotEmpty({ message: 'Địa chỉ cụ thể không được để trống' })
-    detail: string;
+    detail!: string;
 
     @IsOptional()
     @IsBoolean({ message: 'Mặc định phải là kiểu boolean' })

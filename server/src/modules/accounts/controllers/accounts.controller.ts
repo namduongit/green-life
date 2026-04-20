@@ -6,7 +6,6 @@ import { CartsService } from '../../carts/services/carts.service';
 import { CreateAccountDto, QueryAccountDto, UpdateAccountDto } from '../dto/requests/request.dto';
 import { CreateAddressDto, UpdateAddressDto } from 'src/modules/addresses/dto/requests/request.dto';
 import { OrdersService } from 'src/modules/orders/services/orders.service';
-import { JwtPayload } from 'src/modules/auth/services/auth.service';
 
 @Controller('api/users')
 export class AccountsController {

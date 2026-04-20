@@ -1,22 +1,29 @@
 import {
   IsEnum,
+  IsNotEmpty
 } from 'class-validator';
 import { OrderPaymentMethod } from 'prisma/generated/enums';
 
 export class CreateOrderDto {
-  recipientName: string;
-  recipientPhone: string;
-  recipientProvince: string;
-  recipientWard: string;
-  recipientDetail: string;
+  @IsNotEmpty({ message: 'Tên người nhận không được để trống' })
+  recipientName!: string;
+  @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
+  recipientPhone!: string;
+  @IsNotEmpty({ message: 'Tỉnh/Thành phố không được để trống' })
+  recipientProvince!: string;
+  @IsNotEmpty({ message: 'Phường/Xã không được để trống' })
+  recipientWard!: string;
+  @IsNotEmpty({ message: 'Địa chỉ chi tiết không được để trống' })
+  recipientDetail!: string;
 
-  orderItem: OrderItemDto[];
+  @IsNotEmpty({ message: 'Đơn hàng phải có ít nhất một sản phẩm' })
+  orderItem!: OrderItemDto[];
 
   @IsEnum(OrderPaymentMethod)
-  paymentMethod: OrderPaymentMethod;
+  paymentMethod!: OrderPaymentMethod;
 }
 
 class OrderItemDto {
-  productId: string;
-  quantity: number;
+  productId!: string;
+  quantity!: number;
 }

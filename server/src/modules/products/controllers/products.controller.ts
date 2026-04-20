@@ -4,65 +4,13 @@ import { ProductsQueryDto } from '../dto/requests/getAllProduct.dto';
 import { ProductsService } from '../services/products.service';
 import { CreateProductDto, UpdateProductPropertyDto, UpdateProductStatusDto, UpdateProductStockDto, UpdateProductTagsDto } from '../dto/requests/request.dto';
 
-/**
- *
- * Hello everyone Hiếu (luky) đây
- *
- * thì đầu tiên phải biết product là gì trước đã
- *
- * thì tôi định nghĩ product như sau
- *
- *
- * Products:
- *  - id: string
- *  - currentStock: number
- *  - status: enum (active, inactive, others)
- *  - category:
- *    - id: string
- *    - name: string
- *
- *  - tags: []
- *    - id: string
- *    - name: string
- *
- *  - property:
- *    - urlImage: string
- *    - name: string
- *    - description: string
- *    - weight: number
- *    - unit: string
- *    - length: number
- *    - width: number
- *    - height: number
- *
- *
- * phương thức của products
- * - changeStock
- * - updateStatus
- * - updateTags
- * - updateProperty
- * - updateCategory
- *
- * map to controller
- *
- *
- * - GET /api/products -> get all products
- * - GET /api/products/:id -> get product by id
- * - POST /api/products -> create product
- * - PATH /api/products/:id/stock -> change stock
- * - PATCH /api/products/:id/status -> update status
- * - PATCH /api/products/:id/tags -> update tags
- * - PATCH /api/products/:id/property -> update property
- * - PATCH /api/products/:id/category -> update category
- *
- */
-
 @Controller('api/products')
 export class ProductsController {
     constructor(private readonly productsService: ProductsService) {}
 
     @Get('/')
     async getAllProducts(@Query(new ProductsQueryDto()) searchParams: any) {
+        console.log("namduongit debug", searchParams)
         const products = await this.productsService.getAllProducts(searchParams);
         return products;
     }

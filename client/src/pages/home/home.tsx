@@ -4,8 +4,7 @@ import Banner2 from "../../assets/home/banner2.png";
 import Banner3 from "../../assets/home/banner3.png";
 import CardProduct from "../../components/card-product/card-product";
 import { useExecute } from "../../hooks/execute";
-import { getAllProducts } from "../../services/product";
-import type { GetProductRep } from "../../services/product/product.type";
+import { getAllProducts, type ProductRep } from "../../services/product";
 import Icon1 from "../../assets/home/icon1.svg";
 import Icon2 from "../../assets/home/icon2.svg";
 import Icon3 from "../../assets/home/icon3.svg";
@@ -14,17 +13,13 @@ import Icon5 from "../../assets/home/icon5.svg";
 import Icon6 from "../../assets/home/icon6.svg";
 
 const HomePage = () => {
-    const [products, setProducts] = useState<GetProductRep[]>([]);
+    const [products, setProducts] = useState<ProductRep[]>([]);
     const { query } = useExecute();
 
     useEffect(() => {
         const loadProducts = async () => {
-            const result = await query<GetProductRep[]>(
-                getAllProducts({
-                    page: "1",
-                    order: "id",
-                    pageSize: "12"
-                }),
+            const result = await query<ProductRep[]>(
+                getAllProducts(1, 8),
             );
 
             if (result?.data) {

@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
 import CardProduct from "../../components/card-product/card-product";
 import InputSearch from "../../components/input/input-search/input-search";
+import ProductDetailModal from "../../components/product-detail-modal/product-detail-modal";
 import { useExecute } from "../../hooks/execute";
 import { useCart } from "../../contexts/cart/cart";
 import { getAllProducts } from "../../services/product";
-import type { GetProductRep } from "../../services/product/product.type";
+import type { ProductRep } from "../../services/product/product.type";
 
 type SortOption = "default" | "price-asc" | "price-desc";
 
 const ProductPage = () => {
-    const [products, setProducts] = useState<GetProductRep[]>([]);
+    const [products, setProducts] = useState<ProductRep[]>([]);
     const [searchValue, setSearchValue] = useState<string>("");
     const [sortOption, setSortOption] = useState<SortOption>("default");
     const [onlyInStock, setOnlyInStock] = useState(false);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+    const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const { loading, query } = useExecute();
@@ -20,12 +24,8 @@ const ProductPage = () => {
 
     useEffect(() => {
         const loadProducts = async () => {
-            const result = await query<GetProductRep[]>(
-                getAllProducts({
-                    page: "1",
-                    order: "id",
-                    pageSize: "200",
-                }),
+            const result = await query<ProductRep[]>(
+                getAllProducts(0, 200),
             );
 
             if (result?.data) {
@@ -45,6 +45,40 @@ const ProductPage = () => {
 
         loadProducts();
     }, []);
+
+    // Lọc và sắp xếp sản phẩm
+    const filteredProducts = products
+        .filter((product) => {
+            // Lọc theo tên
+            if (searchValue && !product.property?.name.toLowerCase().includes(searchValue.toLowerCase())) {
+                return false;
+            }
+            // Lọc theo danh mục
+            if (selectedCategoryId && product.categoryId !== selectedCategoryId) {
+                return false;
+            }
+            // Lọc theo kho hàng
+            if (onlyInStock && product.currentStock === 0) {
+                return false;
+            }
+            return true;
+        })
+        .sort((a, b) => {
+            if (sortOption === "price-asc") {
+                return (a.property?.price ?? 0) - (b.property?.price ?? 0);
+            }
+            if (sortOption === "price-desc") {
+                return (b.property?.price ?? 0) - (a.property?.price ?? 0);
+            }
+            return 0;
+        });
+
+    // Lấy danh sách danh mục duy nhất
+    const categories = Array.from(
+        new Map(
+            products.map((p: ProductRep) => [p.categoryId, p.category])
+        ).values()
+    );
 
     return (
         <div className="pb-15">
@@ -72,6 +106,19 @@ const ProductPage = () => {
                                 setSearchInput={setSearchValue}
                                 opts={{ width: "w-full md:w-80" }}
                             />
+
+                            <select
+                                value={selectedCategoryId}
+                                onChange={(event) => setSelectedCategoryId(event.target.value)}
+                                className="rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#66cc00]"
+                            >
+                                <option value="">Tất cả danh mục</option>
+                                {categories.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </select>
 
                             <select
                                 value={sortOption}
@@ -102,7 +149,7 @@ const ProductPage = () => {
                         <p>
                             {loading
                                 ? "Đang tải sản phẩm..."
-                                : `${products.length} sản phẩm được tìm thấy`}
+                                : `${filteredProducts.length} sản phẩm được tìm thấy`}
                         </p>
                         {error && (
                             <span className="text-sm text-red-600">
@@ -115,13 +162,17 @@ const ProductPage = () => {
                         <div className="flex w-full justify-center py-20">
                             <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[rgb(51,102,51)]"></div>
                         </div>
-                    ) : products.length > 0 ? (
+                    ) : filteredProducts.length > 0 ? (
                         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                            {products.map((product) => (
+                            {filteredProducts.map((product: ProductRep) => (
                                 <CardProduct
                                     key={product.id}
                                     product={product}
-                                    onAddToCart={(item) => addItem(item.id, 1)}
+                                    onAddToCart={(item: ProductRep) => addItem(item.id, 1)}
+                                    onViewDetail={(id: string) => {
+                                        setSelectedProductId(id);
+                                        setIsModalOpen(true);
+                                    }}
                                 />
                             ))}
                         </div>
@@ -132,6 +183,15 @@ const ProductPage = () => {
                     )}
                 </div>
             </div>
+
+            <ProductDetailModal
+                productId={selectedProductId}
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setSelectedProductId(null);
+                }}
+            />
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import CardProduct from "../../components/card-product/card-product";
 import InputSearch from "../../components/input/input-search/input-search";
 import ProductDetailModal from "../../components/product-detail-modal/product-detail-modal";
@@ -47,38 +47,55 @@ const ProductPage = () => {
     }, []);
 
     // Lọc và sắp xếp sản phẩm
-    const filteredProducts = products
-        .filter((product) => {
-            // Lọc theo tên
-            if (searchValue && !product.property?.name.toLowerCase().includes(searchValue.toLowerCase())) {
-                return false;
-            }
-            // Lọc theo danh mục
-            if (selectedCategoryId && product.categoryId !== selectedCategoryId) {
-                return false;
-            }
-            // Lọc theo kho hàng
-            if (onlyInStock && product.currentStock === 0) {
-                return false;
-            }
-            return true;
-        })
-        .sort((a, b) => {
-            if (sortOption === "price-asc") {
-                return (a.property?.price ?? 0) - (b.property?.price ?? 0);
-            }
-            if (sortOption === "price-desc") {
-                return (b.property?.price ?? 0) - (a.property?.price ?? 0);
-            }
-            return 0;
-        });
+    const filteredProducts = useMemo(() => {
+        return products
+            .filter((product) => {
+                // Lọc theo tên
+                if (
+                    searchValue &&
+                    !product.property?.name
+                        ?.toLowerCase()
+                        .includes(searchValue.toLowerCase())
+                ) {
+                    return false;
+                }
+
+                // Lọc theo danh mục
+                if (
+                    selectedCategoryId &&
+                    product.categoryId !== selectedCategoryId
+                ) {
+                    return false;
+                }
+
+                // Lọc theo kho hàng
+                if (onlyInStock && product.currentStock === 0) {
+                    return false;
+                }
+
+                return true;
+            })
+            .sort((a, b) => {
+                if (sortOption === "price-asc") {
+                    return (a.property?.price ?? 0) - (b.property?.price ?? 0);
+                }
+                if (sortOption === "price-desc") {
+                    return (b.property?.price ?? 0) - (a.property?.price ?? 0);
+                }
+                return 0;
+            });
+    }, [products, searchValue, selectedCategoryId, onlyInStock, sortOption]);
 
     // Lấy danh sách danh mục duy nhất
-    const categories = Array.from(
-        new Map(
-            products.map((p: ProductRep) => [p.categoryId, p.category])
-        ).values()
-    );
+    const categories = useMemo(() => {
+        return Array.from(
+            new Map(
+                products
+                    .filter(p => p.category)
+                    .map(p => [p.categoryId, p.category])
+            ).values()
+        );
+    }, [products]);
 
     return (
         <div className="pb-15">
@@ -136,8 +153,8 @@ const ProductPage = () => {
                                 type="button"
                                 onClick={() => setOnlyInStock((prev) => !prev)}
                                 className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${onlyInStock
-                                        ? "border-[rgb(51,102,51)] bg-[rgb(51,102,51)] text-white"
-                                        : "border-gray-200 text-gray-700 hover:border-[rgb(51,102,51)]"
+                                    ? "border-[rgb(51,102,51)] bg-[rgb(51,102,51)] text-white"
+                                    : "border-gray-200 text-gray-700 hover:border-[rgb(51,102,51)]"
                                     }`}
                             >
                                 {onlyInStock ? "Đang lọc: còn hàng" : "Hiển thị sản phẩm còn hàng"}

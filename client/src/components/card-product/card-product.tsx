@@ -1,29 +1,39 @@
 import { useNavigate } from "react-router";
-import type { GetProductRep } from "../../services/product/product.type";
+import type { ProductRep } from "../../services/product/product.type";
 
 type CardProductProps = {
-    product: GetProductRep;
-    onAddToCart?: (product: GetProductRep) => void;
+    product: ProductRep;
+    onAddToCart?: (product: ProductRep) => void;
+    onViewDetail?: (productId: string) => void;
     isAdding?: boolean;
 };
 
-function CardProduct({ product, onAddToCart, isAdding }: CardProductProps) {
+function CardProduct({ product, onAddToCart, onViewDetail, isAdding }: CardProductProps) {
     const { property, currentStock } = product;
+
+    if (!property) {
+        return null; // Don't render if property is missing
+    }
+
     const isOutOfStock = currentStock === 0;
     const isBusy = isAdding ?? false;
     const navigate = useNavigate();
 
     const handleViewDetail = () => {
-        const targetId = product.id ?? property.id;
-        navigate(`/page/detail/${targetId}`);
+        if (onViewDetail) {
+            onViewDetail(product.id);
+        } else {
+            const targetId = product.id ?? property.id;
+            navigate(`/page/detail/${targetId}`);
+        }
     };
 
     return (
         <div className="group relative flex flex-col bg-white rounded-2xl shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300">
             <div className="relative overflow-hidden bg-gray-50">
                 <img
-                    src={property.urlImage}
-                    alt={property.name}
+                    src={property.urlImage ?? "/placeholder.png"}
+                    alt={property.name ?? "product"}
                     className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 {isOutOfStock && (
@@ -38,19 +48,21 @@ function CardProduct({ product, onAddToCart, isAdding }: CardProductProps) {
                     {property.name}
                 </h3>
                 <p className="text-lg font-bold text-[#66cc00]">
-                    {property.price.toLocaleString("vi-VN")}₫
+                    {(property.price ?? 0).toLocaleString("vi-VN")}₫
                 </p>
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out px-4 pb-3">
                 <div className="flex flex-col gap-2">
                     <button
+                        type="button"
                         onClick={handleViewDetail}
                         className="w-full border border-[rgb(51,102,51)] text-[rgb(51,102,51)] hover:border-[#66cc00] hover:text-[#66cc00] text-md font-semibold py-2 rounded-xl transition-colors duration-200 bg-white"
                     >
                         Chi tiết sản phẩm
                     </button>
                     <button
+                        type="button"
                         onClick={() => onAddToCart?.(product)}
                         disabled={isOutOfStock || isBusy}
                         className="w-full bg-[rgb(51,102,51)] hover:bg-[#66cc00] disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-md font-semibold py-2 rounded-xl transition-colors duration-200"

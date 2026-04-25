@@ -47,27 +47,27 @@ export class AccountsController {
     }
 
     // ========== Addresses ==========
-
+    // Get all addresses for a user: GET /api/users/:id/address
     @Get(':id/address')
     getAddresses(@Param('id') id: string) {
         return this.addressesService.getAddresses(id);
     }
-
+    // Get a specific address by ID: GET /api/users/:id/address/:addressId
     @Get(':id/address/:addressId')
     getAddressById(@Param('id') id: string, @Param('addressId') addressId: string) {
         return this.addressesService.getAddressById(id, addressId);
     }
-
+    // Add a new address for a user: POST /api/users/:id/address
     @Post(':id/address')
     addAddress(@Param('id') id: string, @Body() data: CreateAddressDto) {
         return this.addressesService.createAddress(id, data);
     }
-
+    // Update an existing address: PUT /api/users/:id/address/:addressId
     @Put(':id/address/:addressId')
     updateAddress(@Param('id') id: string, @Param('addressId') addressId: string, @Body() data: UpdateAddressDto) {
         return this.addressesService.updateAddress(id, addressId, data);
     }
-
+    // Delete an address: DELETE /api/users/:id/address/:addressId
     @Delete(':id/address/:addressId')
     deleteAddress(@Param('id') id: string, @Param('addressId') addressId: string) {
         return this.addressesService.deleteAddress(id, addressId);
@@ -99,5 +99,10 @@ export class AccountsController {
     @Get(':id/orders')
     getOrders(@Param('id') id: string) {
         return this.ordersService.getOrdersByAccountId(id);
+    }
+
+    @Get(':id/orders/:orderId')
+    getOrderById(@Param('id') id: string, @Param('orderId') orderId: string) {
+        return this.ordersService.getOrderById(orderId);
     }
 }

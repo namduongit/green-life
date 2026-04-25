@@ -31,8 +31,8 @@ const HomePage = () => {
     }, []);
 
     return (
-        <div>
-            <div className="px-5 py-5 lg:py-10 lg:px-80">
+        <div className="container mx-auto py-10 space-y-20">
+            <div className="flex flex-col gap-5">
                 <div>
                     <div className="flex items-center justify-center">
                         <h4 className="text-3xl lg:text-5xl font-bold text-[rgb(51,102,51)]">
@@ -67,7 +67,7 @@ const HomePage = () => {
                 </div>
             </div>
 
-            <div className="px-5 py-5 lg:py-10 lg:px-80 lg:flex lg:items-center lg:gap-5">
+            <div className="lg:flex lg:items-center lg:gap-5">
                 <div>
                     <div>
                         <div className="flex flex-col items-center justify-center gap-5">
@@ -173,7 +173,7 @@ const HomePage = () => {
                 </div>
             </div>
 
-            <div className="px-5 py-5 lg:py-10 lg:px-80">
+            <div className="">
                 <div>
                     <div className="flex items-center justify-center">
                         <h4 className="text-3xl lg:text-5xl font-bold text-[rgb(51,102,51)]">
@@ -202,7 +202,7 @@ const HomePage = () => {
                 
             </div>
 
-            <div className="px-5 py-5 lg:py-10 lg:px-80 lg:flex lg:gap-5">
+            <div className="lg:flex lg:gap-5">
                 <div>
                     <img src={Banner3} alt="Banner 3" />
                 </div>

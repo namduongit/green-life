@@ -20,3 +20,28 @@ export type OrderRep = {
 	createdAt: string;
 	updatedAt: string;
 };
+
+type OrderItemRep = {
+	id: string;
+    productId: string;
+    quantity: number;
+    price: number;
+    amount: number;
+};
+
+type CheckoutHistoryRep = {
+	id: string;
+    paymentType: OrderPaymentMethod;
+    amount: number;
+    requestId: string;
+    createdAt: Date;
+}
+
+export type OrderDetailRep = {
+	orderItems: OrderItemRep[];
+	checkoutHistory: CheckoutHistoryRep | null;
+	account?: {
+        id: string;
+        email: string;
+    };
+};

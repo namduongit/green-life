@@ -21,6 +21,7 @@ import ProductPage from './pages/product/product'
 import CheckoutPage from './pages/checkout/checkout'
 import InfoPage from './pages/info/info'
 import OrderPage from './pages/order/order'
+import OrderDetailPage from './pages/order-detail/order-detail'
 
 createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
@@ -42,7 +43,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path='/page/cart' element={<CartPage />} />
               <Route path='/page/checkout' element={<CheckoutPage />} />
               <Route path='/page/info' element={<InfoPage />} />
-              <Route path='/page/order' element={<OrderPage />} />
+              <Route path='/page/orders' element={<OrderPage />} />
+              <Route path='/page/orders/:uuid' element={<OrderDetailPage />} />
               <Route path='/page/payment' element={<PaymentPage />} />
             </Route>
 

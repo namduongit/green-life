@@ -77,7 +77,7 @@ const AuthIcon = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => handleNavigate("/page/order?tab=history")}
+                                    onClick={() => handleNavigate("/page/orders?tab=history")}
                                     className="w-full text-left px-4 py-2 rounded-lg border border-gray-200 font-medium text-gray-700 hover:border-green-600 hover:text-green-700"
                                 >
                                     Lịch sử

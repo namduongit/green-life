@@ -18,7 +18,8 @@ export const useExecute = () => {
             setLoading(true);
 
             const result = await promiseFunc;
-
+            console.log(result)
+            
             if (result && result.data) {
                 setLoading(false);
                 // Handle nested data structure: {data: {data: T, pagination: ...}} or {data: T}

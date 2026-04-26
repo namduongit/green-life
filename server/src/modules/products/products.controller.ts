@@ -65,8 +65,12 @@ export class ProductsController {
     constructor(private readonly productsService: ProductsService) {}
 
     @Get('/')
-    async getAllProducts(@Query(new ProductsQueryDto()) searchParams: any) {
+    async getAllProducts(@Query(new ProductsQueryDto()) searchParams: any, @Query('topProducts') topProducts: string) {
         console.log('Parsed Query:', JSON.stringify(searchParams, null, 2));
+
+        if (topProducts === 'true') {
+            return this.productsService.getHotProducts();
+        }
 
         const products = await this.productsService.getAllProducts(searchParams);
         return products;

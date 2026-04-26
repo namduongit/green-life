@@ -124,22 +124,24 @@ model Properties {
 }
 
 model Products {
-  id           String       @id @default(auto()) @map("_id") @db.ObjectId
-  currentStock Int          @default(0)
-  status       CommonStatus @default(Other)
+    id           String       @id @default(auto()) @map("_id") @db.ObjectId
+    currentStock Int          @default(0)
+    status       CommonStatus @default(Other)
 
-  categoryId String     @db.ObjectId
-  category   Categories @relation(fields: [categoryId], references: [id])
+    categoryId String     @db.ObjectId
+    category   Categories @relation(fields: [categoryId], references: [id])
 
-  isDelete Boolean @default(false)
+    isDelete Boolean @default(false)
 
-  tagItems TagProducts[]
+    tagItems TagProducts[]
 
-  orderItems OrderItems[]
+    orderItems OrderItems[]
 
-  cartItems CartItems[]
+    cartItems CartItems[]
 
-  property Properties?
+    property Properties?
+
+    hotProducts HotProducts[]
 }
 
 model Orders {
@@ -216,4 +218,14 @@ model CartItems {
 
     cartId String @db.ObjectId
     cart   Carts  @relation(fields: [cartId], references: [id])
+}
+
+model HotProducts {
+    id String @id @default(auto()) @map("_id") @db.ObjectId
+
+    productId String   @db.ObjectId
+    product   Products @relation(fields: [productId], references: [id])
+
+    createdAt DateTime  @default(now())
+    deletedAt DateTime?
 }

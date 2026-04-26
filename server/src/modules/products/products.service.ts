@@ -5,6 +5,7 @@ import { ProductsOrderByWithRelationInput, ProductsWhereInput } from 'prisma/gen
 import { CreateProductDto } from './dto/createProduct.dto';
 import { CommonStatus } from 'prisma/generated/enums';
 import { Properties } from 'prisma/generated/client';
+import { Cron } from '@nestjs/schedule';
 
 const INCLUDE_PRODUCT_RELATIONS = {
     category: {
@@ -36,6 +37,87 @@ const INCLUDE_PRODUCT_RELATIONS = {
 @Injectable()
 export class ProductsService {
     constructor(private readonly prismaService: PrismaService) {}
+
+    // tôi muốn cái tên hàm này thể hiện
+    // hàm này là hàm chạy ở backgour sau một khoản thời gian và tính toán ra top 10 sản phẩm bán chạy nhất trong ngày hôm đó và lưu vào bảng hotProducts
+    // async topHotProducts(limit: number) {
+    // }
+    @Cron('0 0 * * *') // Chạy vào lúc 00:00 hàng ngày
+    async calculateHotProducts() {
+        console.log('Calculating hot products...');
+        // Lấy tất cả sản phẩm đã bán trong ngày hôm đó
+        const soldProducts = await this.prismaService.prismaClient.orderItems.groupBy({
+            by: ['productId'],
+            where: {
+                order: {
+                    createdAt: {
+                        gte: new Date(new Date().setHours(0, 0, 0, 0)), // bắt đầu ngày hôm đó
+                        lt: new Date(new Date().setHours(24, 0, 0, 0)), // kết thúc ngày hôm đó
+                    },
+                },
+            },
+            _sum: {
+                quantity: true,
+            },
+            orderBy: {
+                _sum: {
+                    quantity: 'desc',
+                },
+            },
+            take: 10, // lấy top 10 sản phẩm bán chạy nhất
+        });
+
+        // Xóa hết các sản phẩm hot cũ
+        await this.prismaService.prismaClient.hotProducts.deleteMany();
+
+        // Lưu các sản phẩm hot mới vào bảng hotProducts
+        const hotProductsData = soldProducts.map((item) => ({
+            productId: item.productId,
+        }));
+
+        if ((hotProductsData.length == 0)) {
+            console.log('No hot products found for today.');
+            return;
+        }
+
+        await this.prismaService.prismaClient.hotProducts.createMany({
+            data: hotProductsData,
+        });
+
+        return true;
+    }
+
+    async getHotProducts() {
+        const hotProducts = await this.prismaService.prismaClient.hotProducts.findMany({
+            include: {
+                product: {
+                    include: INCLUDE_PRODUCT_RELATIONS,
+                },
+            },
+        });
+
+        if (!hotProducts || hotProducts.length === 0) {
+            const have = await this.calculateHotProducts();
+            if (have) {
+                return this.getHotProducts();
+            }
+            return [];
+        }
+
+        // map hotProducts to return product with tags
+        return hotProducts.map((hotProduct) => {
+            const { product } = hotProduct;
+            if (!product) {
+                return null;
+            }
+            const { tagItems, ...rest } = product;
+            const tags = tagItems.map((tagItem) => tagItem.tag);
+            return {
+                ...rest,
+                tags,
+            };
+        });
+    }
 
     async getAllProducts(filter: SearchParamsQuery<ProductsWhereInput, ProductsOrderByWithRelationInput>) {
         const products = await this.prismaService.prismaClient.products.findMany({
@@ -119,7 +201,7 @@ export class ProductsService {
         return createdProduct;
     }
 
-    async deleteProduct(id: string){
+    async deleteProduct(id: string) {
         await this.prismaService.prismaClient.products.update({
             where: {
                 id,
@@ -130,7 +212,7 @@ export class ProductsService {
         });
     }
 
-    async reActivate(id: string){
+    async reActivate(id: string) {
         await this.prismaService.prismaClient.products.update({
             where: {
                 id,

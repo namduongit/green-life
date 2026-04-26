@@ -10,6 +10,7 @@ import { AuthorizeMiddleware } from './middleware/authorize.middleware';
 import { JwtModule } from '@nestjs/jwt';
 import { JsonWtConstants } from './constants/jsonwt.constants';
 import { OrdersModule } from './modules/orders/orders.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 /**
  * Explain:
@@ -31,6 +32,7 @@ import { OrdersModule } from './modules/orders/orders.module';
                 expiresIn: JsonWtConstants.expiresIn,
             },
         }),
+        ScheduleModule.forRoot(),
         AuthModule,
         TagsModule,
         CategoriesModule,

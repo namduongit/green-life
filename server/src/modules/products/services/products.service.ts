@@ -7,6 +7,7 @@ import { PrismaService } from 'src/configs/prisma-client.config';
 import { PaginationDto } from 'src/modules/common.dto';
 import { CreateProductDto } from '../dto/requests/request.dto';
 import { ProductListResponseDto, ProductResponseDto } from '../dto/responses/response.dto';
+import { Cron } from '@nestjs/schedule';
 
 const PRODUCT_INCLUDE = {
     category: {
@@ -49,7 +50,8 @@ export class ProductsService {
     constructor(private readonly prismaService: PrismaService) {}
 
     // tính toán sản phẩm hot dựa trên số lượng bán ra trong ngày
-
+    @Cron('0 0 * * *') // Chạy vào lúc 00:00 hàng ngày
+    // @Cron('*/30 * * * * *') // Chạy mỗi 30 giây (dùng cho mục đích test)
     async calculateHotProducts() {
         console.log('Calculating hot products...');
         const today = new Date();

@@ -48,11 +48,84 @@ type ProductWithRelations = Prisma.ProductsGetPayload<{
 export class ProductsService {
     constructor(private readonly prismaService: PrismaService) {}
 
+    // tính toán sản phẩm hot dựa trên số lượng bán ra trong ngày
+
+    async calculateHotProducts() {
+        console.log('Calculating hot products...');
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+        // Lấy số lượng bán ra của từng sản phẩm trong ngày
+        const salesData = await this.prismaService.prismaClient.orderItems.groupBy({
+            by: ['productId'],
+            where: {
+                order: {
+                    createdAt: {
+                        gte: startOfDay,
+                        lt: endOfDay,
+                    },
+                },
+            },
+            _sum: {
+                quantity: true,
+            },
+            orderBy: {
+                _sum: {
+                    quantity: 'desc',
+                },
+            },
+            take: 10, // Lấy top 10 sản phẩm bán chạy nhất
+        });
+
+        // delete all hot products cũ
+        await this.prismaService.prismaClient.hotProducts.deleteMany({});
+
+        // Thêm sản phẩm hot mới vào bảng hotProducts
+        const hotProductsData = salesData.map((item) => ({
+            productId: item.productId,
+            soldQuantity: item._sum.quantity ?? 0,
+        }));
+
+        if (hotProductsData.length == 0) return false;
+
+        await this.prismaService.prismaClient.hotProducts.createMany({
+            data: hotProductsData,
+        });
+
+        return true;
+    }
+
+    async getHotProducts(): Promise<ProductResponseDto[]> {
+        const hotProducts = await this.prismaService.prismaClient.hotProducts.findMany({
+            orderBy: {
+                soldQuantity: 'desc',
+            },
+            include: {
+                product: {
+                    include: PRODUCT_INCLUDE,
+                },
+            },
+        });
+
+        if (hotProducts.length === 0) {
+            const haveCalculated = await this.calculateHotProducts();
+
+            if (!haveCalculated) {
+                return [];
+            }
+
+            return this.getHotProducts();
+        }
+
+        return hotProducts.map((hotProduct) => this.mapProduct(hotProduct.product));
+    }
+
     async getAllProducts(
         filter: SearchParamsQuery<ProductsWhereInput, ProductsOrderByWithRelationInput>,
         /**
-         * 
-         * 
+         *
+         *
          */
     ): Promise<ProductListResponseDto> {
         const where = this.buildWhereClause(filter.where);
@@ -65,9 +138,7 @@ export class ProductsService {
                 take: filter.take,
                 include: PRODUCT_INCLUDE,
             }),
-            filter.take
-                ? this.prismaService.prismaClient.products.count({ where })
-                : Promise.resolve(0),
+            filter.take ? this.prismaService.prismaClient.products.count({ where }) : Promise.resolve(0),
         ]);
 
         const data = products.map((product) => this.mapProduct(product));

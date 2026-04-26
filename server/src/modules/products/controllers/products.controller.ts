@@ -11,6 +11,13 @@ export class ProductsController {
     @Get('/')
     async getAllProducts(@Query(new ProductsQueryDto()) searchParams: any) {
         console.log("namduongit debug", searchParams)
+
+        
+
+        if (searchParams.where.hotProducts) {
+            return await this.productsService.getHotProducts();
+        }
+        
         const products = await this.productsService.getAllProducts(searchParams);
         return products;
     }

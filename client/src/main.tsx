@@ -22,6 +22,9 @@ import CheckoutPage from './pages/checkout/checkout'
 import InfoPage from './pages/info/info'
 import OrderPage from './pages/order/order'
 import OrderDetailPage from './pages/order-detail/order-detail'
+import AboutPage from './pages/about/About'
+import CertificatePage from './pages/certificate/certificate'
+import ImagePage from './pages/image/image'
 
 createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
@@ -31,22 +34,25 @@ createRoot(document.getElementById('root')!).render(
             <CardProvider>
               <Routes>
 
-            <Route path='/' element={<Layout />}>
-              {/* Home page */}
-              <Route path='/' element={<HomePage />} />
-              {/* Auth service page */}
-              <Route path='/auth/login' element={<LoginPage />} />
-              <Route path='/auth/register' element={<RegisterPage />} />
+                <Route path='/' element={<Layout />}>
+                {/* Home page */}
+                <Route path='/' element={<HomePage />} />
+                {/* Auth service page */}
+                <Route path='/auth/login' element={<LoginPage />} />
+                <Route path='/auth/register' element={<RegisterPage />} />
 
-              {/* Feature service page */}
-              <Route path='/page/product' element={<ProductPage />} />
-              <Route path='/page/cart' element={<CartPage />} />
-              <Route path='/page/checkout' element={<CheckoutPage />} />
-              <Route path='/page/info' element={<InfoPage />} />
-              <Route path='/page/orders' element={<OrderPage />} />
-              <Route path='/page/orders/:uuid' element={<OrderDetailPage />} />
-              <Route path='/page/payment' element={<PaymentPage />} />
-            </Route>
+                {/* Feature service page */}
+                <Route path='/page/product' element={<ProductPage />} />
+                <Route path='/page/cart' element={<CartPage />} />
+                <Route path='/page/checkout' element={<CheckoutPage />} />
+                <Route path='/page/info' element={<InfoPage />} />
+                <Route path='/page/orders' element={<OrderPage />} />
+                <Route path='/page/orders/:uuid' element={<OrderDetailPage />} />
+                <Route path='/page/payment' element={<PaymentPage />} />
+                <Route path='/page/about' element={<AboutPage />} />
+                <Route path='/page/testing' element={<CertificatePage />} />
+                <Route path='/page/image' element={<ImagePage />} />
+              </Route>
 
             {/* Admin service page */}
             <Route path='/admin' element={<AdminLayout />} >

@@ -61,9 +61,9 @@ model Accounts {
 
     cart Carts?
 
-    orders           Orders[]
-    addresses        Addresses[]
-    checkoutHistory  CheckoutHistory[]
+    orders          Orders[]
+    addresses       Addresses[]
+    checkoutHistory CheckoutHistory[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -109,7 +109,7 @@ model Tags {
 
 model Properties {
     id          String   @id @default(auto()) @map("_id") @db.ObjectId
-    productId   String   @db.ObjectId  @unique
+    productId   String   @unique @db.ObjectId
     Product     Products @relation(fields: [productId], references: [id])
     urlImage    String
     name        String
@@ -126,26 +126,27 @@ model Properties {
 }
 
 model Products {
-  id           String       @id @default(auto()) @map("_id") @db.ObjectId
-  currentStock Int          @default(0)
-  status       CommonStatus
+    id           String       @id @default(auto()) @map("_id") @db.ObjectId
+    currentStock Int          @default(0)
+    status       CommonStatus
 
-  categoryId String     @db.ObjectId
-  category   Categories @relation(fields: [categoryId], references: [id])
+    categoryId String     @db.ObjectId
+    category   Categories @relation(fields: [categoryId], references: [id])
 
-  isDelete Boolean @default(false)
+    isDelete Boolean @default(false)
 
-  tagItems TagProducts[]
+    tagItems TagProducts[]
 
-  orderItems OrderItems[]
+    orderItems OrderItems[]
 
-  cartItems CartItems[]
+    cartItems CartItems[]
 
-  property Properties?
+    property    Properties?
+    hotProducts HotProducts[]
 }
 
 model Orders {
-    id            String             @id @default(auto()) @map("_id") @db.ObjectId
+    id            String @id @default(auto()) @map("_id") @db.ObjectId
     totalAmount   Int
     totalQuantity Int
 
@@ -165,8 +166,8 @@ model Orders {
     accountId String   @db.ObjectId
     account   Accounts @relation(fields: [accountId], references: [id])
 
-    orderItems OrderItems[]
-    checkoutHistory  CheckoutHistory?
+    orderItems      OrderItems[]
+    checkoutHistory CheckoutHistory?
 }
 
 model OrderItems {
@@ -213,15 +214,24 @@ model CartItems {
 }
 
 model CheckoutHistory {
-    id          String      @id @default(auto()) @map("_id") @db.ObjectId
-    createdAt   DateTime    @default(now())
+    id          String             @id @default(auto()) @map("_id") @db.ObjectId
+    createdAt   DateTime           @default(now())
     paymentType OrderPaymentMethod
     amount      Int
     requestId   String
 
-    orderId String  @db.ObjectId @unique
-    order   Orders  @relation(fields: [orderId], references: [id])
+    orderId String @unique @db.ObjectId
+    order   Orders @relation(fields: [orderId], references: [id])
 
-    accountId String    @db.ObjectId
-    account   Accounts  @relation(fields: [accountId], references: [id])
+    accountId String   @db.ObjectId
+    account   Accounts @relation(fields: [accountId], references: [id])
+}
+
+model HotProducts {
+    id String @id @default(auto()) @map("_id") @db.ObjectId
+
+    productId String   @db.ObjectId
+    product   Products @relation(fields: [productId], references: [id])
+
+    soldQuantity Int
 }

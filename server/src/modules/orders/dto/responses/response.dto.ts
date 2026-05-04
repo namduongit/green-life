@@ -40,4 +40,5 @@ export type OrderDetailResponseDto = OrderResponseDto & {
         id: string;
         email: string;
     };
+    paymentUrl?: string;
 };

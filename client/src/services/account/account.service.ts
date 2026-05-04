@@ -32,6 +32,16 @@ export const activateAccount = async (id: string) => {
     return response;
 }
 
+export const lockAccount = async (id: string) => {
+    const response = await api.patch<AccountRep>(`/api/users/${id}/lock`);
+    return response;
+};
+
+export const resetAccountPassword = async (id: string, newPassword: string) => {
+    const response = await api.patch<{ message: string }>(`/api/users/${id}/reset-password`, { newPassword });
+    return response;
+};
+
 export const getUserCart = async (userId: string) => {
     const response = await api.get<CartItemRep>(`/api/users/${userId}/cart`);
     return response.data;

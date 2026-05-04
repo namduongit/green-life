@@ -5,6 +5,7 @@ import { SearchParamsQuery } from 'prisma-searchparams-mapper';
 import { Prisma } from 'prisma/generated/browser';
 import { AccountResponseDto } from '../dto/responses/response.dto';
 import { CreateAccountDto, UpdateAccountDto } from '../dto/requests/request.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AccountsService {
@@ -119,7 +120,31 @@ export class AccountsService {
             email: activatedUser.email,
             role: activatedUser.role,
             isLock: activatedUser.isLock,
-            
         }
+    }
+
+    async lockAccount(id: string): Promise<AccountResponseDto> {
+        const updated = await this.prismaService.prismaClient.accounts.update({
+            where: { id },
+            data: { isLock: true },
+        });
+        return {
+            id: updated.id,
+            createdAt: updated.createdAt,
+            updatedAt: updated.updatedAt,
+            email: updated.email,
+            role: updated.role,
+            isLock: updated.isLock,
+        };
+    }
+
+    async resetPassword(id: string, newPassword: string): Promise<{ message: string }> {
+        const saltRound = parseInt(process.env.SALT_ROUND ?? '10', 10);
+        const hashed = await bcrypt.hash(newPassword, saltRound);
+        await this.prismaService.prismaClient.accounts.update({
+            where: { id },
+            data: { password: hashed },
+        });
+        return { message: 'Đặt lại mật khẩu thành công' };
     }
 }

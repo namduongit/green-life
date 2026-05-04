@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import InputSearch from "../../../components/input/input-search/input-search";
 import Stats from "../../../components/stats/stats";
 import Table from "../../../components/table/table";
 import type { TableBody, TableHeader } from "../../../components/table/table";
+import AdminPagination, { PAGE_SIZES } from "../../../components/admin-pagination/admin-pagination";
 import {
   getAllCategories,
   softDeleteCategory,
@@ -29,6 +30,8 @@ const AdminCategory = () => {
   const [selectedCategoryIdForDelete, setSelectedCategoryIdForDelete] = useState<string | null>(null);
   const [selectedCategoryIdForRestore, setSelectedCategoryIdForRestore] = useState<string | null>(null);
   const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<CategoryRep | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
 
   const { showToast, showErrorResponse } = useToastContext();
 
@@ -56,19 +59,20 @@ const AdminCategory = () => {
     });
   }, [categories]);
 
-  const filteredCategories = categories.filter(category => {
+  const filteredCategories = useMemo(() => categories.filter(category => {
     const matchSearch =
       category.name.toLowerCase().includes(searchInput.toLowerCase()) ||
       category.slug.toLowerCase().includes(searchInput.toLowerCase());
-
     const matchStatus =
       statusFilter === "" ||
-      (statusFilter === "DELETED"
-        ? category.isDelete
-        : !category.isDelete);
-
+      (statusFilter === "DELETED" ? category.isDelete : !category.isDelete);
     return matchSearch && matchStatus;
-  });
+  }), [categories, searchInput, statusFilter]);
+
+  const totalPages = Math.ceil(filteredCategories.length / pageSize);
+  const paginatedCategories = filteredCategories.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => { setPage(1); }, [searchInput, statusFilter]);
 
   const handleReActivateCategory = async (id: string) => {
     const result = await query(reActivateCategory(id));
@@ -126,7 +130,7 @@ const AdminCategory = () => {
     "Actions",
   ];
 
-  const tableBody: TableBody = filteredCategories.map(category => ([
+  const tableBody: TableBody = paginatedCategories.map(category => ([
     {
       reactNode: (
         <div className="max-w-[160px] truncate" title={category.id}>
@@ -274,6 +278,13 @@ const AdminCategory = () => {
         ) : (
           <>
             <Table tableHead={tableHead} tableBody={tableBody} />
+            <AdminPagination
+              page={page} totalPages={Math.max(totalPages, 1)}
+              onPageChange={setPage}
+              pageSize={pageSize}
+              onPageSizeChange={s => { setPageSize(s); setPage(1); }}
+              total={filteredCategories.length}
+            />
           </>
         )}
       </div>

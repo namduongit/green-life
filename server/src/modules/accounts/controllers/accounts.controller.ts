@@ -41,9 +41,19 @@ export class AccountsController {
     //     return this.usersService.deActivate(id);
     // }
 
-    @Patch( ':id/activate')
+    @Patch(':id/activate')
     activateUser(@Param('id') id: string) {
         return this.usersService.activate(id);
+    }
+
+    @Patch(':id/lock')
+    lockUser(@Param('id') id: string) {
+        return this.usersService.lockAccount(id);
+    }
+
+    @Patch(':id/reset-password')
+    resetPassword(@Param('id') id: string, @Body() body: { newPassword: string }) {
+        return this.usersService.resetPassword(id, body.newPassword);
     }
 
     // ========== Addresses ==========
@@ -104,5 +114,10 @@ export class AccountsController {
     @Get(':id/orders/:orderId')
     getOrderById(@Param('id') id: string, @Param('orderId') orderId: string) {
         return this.ordersService.getOrderById(orderId);
+    }
+
+    @Get(':id/checkout-history')
+    getCheckoutHistory(@Param('id') id: string) {
+        return this.ordersService.getCheckoutHistoryByAccount(id);
     }
 }

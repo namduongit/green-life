@@ -7,11 +7,14 @@ import axios from 'axios';
 import { AxiosError } from 'axios';
 import { MomoOptionalOtps, MomoRequireOtps } from '../dto/requests/momo-request.dto';
 import { MomoCreateResponseDto } from '../dto/responses/momo-response.dto';
+import { PrismaService } from 'src/configs/prisma-client.config';
+import { OrderPaymentStatus } from 'prisma/generated/enums';
 
 @Injectable()
 export class PaymentsService {
     constructor(
         private readonly cryptoUtils: CryptoUtils,
+        private readonly prismaService: PrismaService,
     ) { }
 
     async paymentMomoCreate(
@@ -104,6 +107,61 @@ export class PaymentsService {
         }
     }
 
+    /**
+     * Xử lý IPN callback từ Momo sau khi người dùng thanh toán
+     * resultCode = 0 → thanh toán thành công
+     */
+    async handleMomoIpn(body: any): Promise<void> {
+        const { orderId, resultCode, requestId, amount, transId } = body;
+
+        console.log(`[Momo IPN] orderId=${orderId}, resultCode=${resultCode}, transId=${transId}`);
+
+        if (!orderId) {
+            console.warn('[Momo IPN] Missing orderId in callback');
+            return;
+        }
+
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: { id: orderId },
+        });
+
+        if (!order) {
+            console.warn(`[Momo IPN] Order ${orderId} not found`);
+            return;
+        }
+
+        if (resultCode === 0) {
+            // Thanh toán thành công → cập nhật paymentStatus và tạo checkoutHistory
+            await this.prismaService.prismaClient.$transaction(async (prisma) => {
+                await prisma.orders.update({
+                    where: { id: orderId },
+                    data: { paymentStatus: OrderPaymentStatus.Paid },
+                });
+
+                // Tạo checkoutHistory nếu chưa có
+                const existing = await prisma.checkoutHistory.findUnique({
+                    where: { orderId },
+                });
+
+                if (!existing) {
+                    await prisma.checkoutHistory.create({
+                        data: {
+                            orderId,
+                            accountId: order.accountId,
+                            paymentType: 'Momo' as any,
+                            amount: amount ?? order.totalAmount,
+                            requestId: requestId ?? '',
+                        },
+                    });
+                }
+            });
+
+            console.log(`[Momo IPN] Order ${orderId} marked as Paid`);
+        } else {
+            console.log(`[Momo IPN] Payment failed for order ${orderId}, resultCode=${resultCode}`);
+        }
+    }
+
     async paymentMomoQuery() {
 
     }
@@ -119,5 +177,61 @@ export class PaymentsService {
     /** */
     async paymentSeapayCreate() {
 
+    }
+
+    /** Admin: lấy tất cả giao dịch với filter/sort/pagination */
+    async getAllTransactions(params: {
+        page: number;
+        limit: number;
+        paymentType?: string;
+        sortBy?: 'amount' | 'createdAt';
+        sortOrder?: 'asc' | 'desc';
+        search?: string;
+    }) {
+        const { page, limit, paymentType, sortBy = 'createdAt', sortOrder = 'desc', search } = params;
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+        if (paymentType) where.paymentType = paymentType;
+        if (search) {
+            where.OR = [
+                { requestId: { contains: search, mode: 'insensitive' } },
+                { account: { email: { contains: search, mode: 'insensitive' } } },
+                { orderId: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+
+        const [total, data] = await Promise.all([
+            this.prismaService.prismaClient.checkoutHistory.count({ where }),
+            this.prismaService.prismaClient.checkoutHistory.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { [sortBy]: sortOrder },
+                include: {
+                    account: { select: { id: true, email: true } },
+                    order: {
+                        select: {
+                            id: true,
+                            status: true,
+                            paymentMethod: true,
+                            paymentStatus: true,
+                            totalAmount: true,
+                            recipientName: true,
+                        },
+                    },
+                },
+            }),
+        ]);
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 }

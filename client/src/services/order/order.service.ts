@@ -16,7 +16,7 @@ export const createOrder = async (orderForm: {
     }[],
     paymentMethod: OrderPaymentMethod
 }) => {
-    const response = await api.post("/api/orders", orderForm);
+    const response = await api.post<OrderDetailRep>("/api/orders", orderForm);
     return response;
 };
 
@@ -45,8 +45,38 @@ export const getOrderById = async (id: string) => {
     return response;
 };
 
-// Get all orders (admin only)
-export const getOrder = async () => {
-    const response = await api.get<OrderRep[]>(`/api/orders`);
+// Get all orders with optional status filter (admin)
+export const getOrder = async (status?: string) => {
+    const url = status ? `/api/orders?status=${status}` : `/api/orders`;
+    const response = await api.get<OrderRep[]>(url);
+    return response;
+};
+
+// Advance order to next status (admin)
+export const advanceOrderStatus = async (orderId: string) => {
+    const response = await api.patch<OrderDetailRep>(`/api/orders/${orderId}/advance-status`);
+    return response;
+};
+
+// Cancel order (admin)
+export const cancelOrderAdmin = async (orderId: string) => {
+    const response = await api.patch<OrderDetailRep>(`/api/orders/${orderId}/cancel`);
+    return response;
+};
+
+// Get checkout history for a user
+export const getCheckoutHistory = async (accountId: string) => {
+    const response = await api.get(`/api/users/${accountId}/checkout-history`);
+    return response;
+};
+
+export const getOrderPaymentStatus = async (orderId: string) => {
+    const response = await api.get<{
+        id: string;
+        paymentStatus: string;
+        paymentMethod: string;
+        accountId: string;
+        totalAmount: number;
+    }>(`/api/orders/${orderId}/payment-status`);
     return response;
 };

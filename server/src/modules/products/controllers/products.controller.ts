@@ -28,6 +28,15 @@ export class ProductsController {
         return product;
     }
 
+    @Get('/:id/related')
+    async getRelatedProducts(
+        @Param('id') id: string,
+        @Query('limit') limit?: string,
+    ) {
+        const products = await this.productsService.getRelatedProducts(id, limit ? parseInt(limit, 10) : 8);
+        return products;
+    }
+
     @Post('/')
     async createProduct(@Body() productData: CreateProductDto) {
         console.log('Create Product Data:', productData);

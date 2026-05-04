@@ -15,6 +15,7 @@ import AdminProduct from './pages/admin-page/product/product'
 import AdminTag from './pages/admin-page/tag/tag'
 import AdminCategory from './pages/admin-page/category/category'
 import AdminOrder from './pages/admin-page/order/order'
+import AdminPayments from './pages/admin-page/payments/payments'
 import { AuthProvider } from './contexts/auth/auth'
 import { CardProvider } from './contexts/cart/cart'
 import ProductPage from './pages/product/product'
@@ -25,6 +26,9 @@ import OrderDetailPage from './pages/order-detail/order-detail'
 import AboutPage from './pages/about/About'
 import CertificatePage from './pages/certificate/certificate'
 import ImagePage from './pages/image/image'
+import ProductDetailPage from './pages/product-detail/product-detail'
+import CheckoutSuccessPage from './pages/checkout-success/checkout-success'
+import TransactionPage from './pages/transaction/transaction'
 
 createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
@@ -43,11 +47,14 @@ createRoot(document.getElementById('root')!).render(
 
                 {/* Feature service page */}
                 <Route path='/page/product' element={<ProductPage />} />
+                <Route path='/page/product/:id' element={<ProductDetailPage />} />
                 <Route path='/page/cart' element={<CartPage />} />
                 <Route path='/page/checkout' element={<CheckoutPage />} />
+                <Route path='/page/checkout-success' element={<CheckoutSuccessPage />} />
                 <Route path='/page/info' element={<InfoPage />} />
                 <Route path='/page/orders' element={<OrderPage />} />
                 <Route path='/page/orders/:uuid' element={<OrderDetailPage />} />
+                <Route path='/page/transactions' element={<TransactionPage />} />
                 <Route path='/page/payment' element={<PaymentPage />} />
                 <Route path='/page/about' element={<AboutPage />} />
                 <Route path='/page/testing' element={<CertificatePage />} />
@@ -61,6 +68,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path='/admin/accounts' element={<AdminAccount />} />
               <Route path='/admin/products' element={<AdminProduct />} />
               <Route path='/admin/orders' element={<AdminOrder />} />
+              <Route path='/admin/payments' element={<AdminPayments />} />
               <Route path='/admin/category' element={<AdminCategory />} />
               <Route path='/admin/tag' element={<AdminTag />} />
               <Route path='/admin/category' element={<AdminCategory />} />

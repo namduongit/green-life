@@ -180,8 +180,18 @@ const CheckoutPage = () => {
                 showToast("Error", result.errors || "Tạo đơn hàng thất bại.");
             }
         } else if (result?.data) {
-            showToast("Success", "Đơn hàng đã được tạo thành công!");
             await clearCart();
+
+            // Nếu thanh toán Momo và có paymentUrl → redirect sang cổng Momo
+            const paymentUrl = (result.data as any)?.paymentUrl;
+            if (paymentMethod === "momo" && paymentUrl) {
+                showToast("Success", "Đang chuyển đến cổng thanh toán MoMo...");
+                window.location.href = paymentUrl;
+                return;
+            }
+
+            // COD hoặc các phương thức khác → vào trang payment
+            showToast("Success", "Đơn hàng đã được tạo thành công!");
             navigate("/page/payment", {
                 state: {
                     paymentMethod,

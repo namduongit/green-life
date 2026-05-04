@@ -18,12 +18,14 @@ const HomePage = () => {
 
     useEffect(() => {
         const loadProducts = async () => {
-            const result = await query<ProductRep[]>(
-                getAllProducts(1, 8),
+            const result = await query(
+                getAllProducts({ page: 1, pageSize: 8 }),
             );
 
             if (result?.data) {
-                setProducts(result.data);
+                const pageData = result.data as any;
+                const items = pageData.data ?? pageData;
+                setProducts(items);
             }
         };
 

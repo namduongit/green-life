@@ -21,14 +21,11 @@ export const useExecute = () => {
 
             if (result && result.data) {
                 setLoading(false);
-                // Handle nested data structure: {data: {data: T, pagination: ...}} or {data: T}
-                let responseData = (result.data as any).data ?? result.data;
-                
-                // If responseData is still an object with .data property that contains the actual array
-                if (responseData && typeof responseData === 'object' && !Array.isArray(responseData) && 'data' in responseData) {
-                    responseData = responseData.data;
-                }
-                
+                // Server wraps all responses as { statusCode, message, data, error }
+                // Unwrap one level: result.data = { statusCode, message, data: T, error }
+                const envelope = result.data as any;
+                const responseData = envelope.data !== undefined ? envelope.data : envelope;
+
                 return {
                     data: responseData as T,
                     errors: null

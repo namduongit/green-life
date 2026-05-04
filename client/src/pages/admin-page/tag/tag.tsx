@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import InputSearch from "../../../components/input/input-search/input-search";
 import Stats from "../../../components/stats/stats";
 import Table from "../../../components/table/table";
 import type { TableBody, TableHeader } from "../../../components/table/table";
+import AdminPagination, { PAGE_SIZES } from "../../../components/admin-pagination/admin-pagination";
 import {
   getAllTags,
   softDeleteTag,
@@ -29,6 +30,8 @@ const AdminTag = () => {
   const [selectedTagIdForDelete, setSelectedTagIdForDelete] = useState<string | null>(null);
   const [selectedTagIdForRestore, setSelectedTagIdForRestore] = useState<string | null>(null);
   const [selectedTagForEdit, setSelectedTagForEdit] = useState<TagRep | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
 
   const { showToast, showErrorResponse } = useToastContext();
 
@@ -56,17 +59,18 @@ const AdminTag = () => {
     });
   }, [tags]);
 
-  const filteredTags = tags.filter(tag => {
+  const filteredTags = useMemo(() => tags.filter(tag => {
     const matchSearch = tag.name.toLowerCase().includes(searchInput.toLowerCase());
-
     const matchStatus =
       statusFilter === "" ||
-      (statusFilter === "DELETED"
-        ? tag.isDelete
-        : !tag.isDelete);
-
+      (statusFilter === "DELETED" ? tag.isDelete : !tag.isDelete);
     return matchSearch && matchStatus;
-  });
+  }), [tags, searchInput, statusFilter]);
+
+  const totalPages = Math.ceil(filteredTags.length / pageSize);
+  const paginatedTags = filteredTags.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => { setPage(1); }, [searchInput, statusFilter]);
 
   const handleReActivateTag = async (id: string) => {
     const result = await query(reActivateTag(id));
@@ -123,7 +127,7 @@ const AdminTag = () => {
     "Actions",
   ];
 
-  const tableBody: TableBody = filteredTags.map(tag => ([
+  const tableBody: TableBody = paginatedTags.map(tag => ([
     {
       reactNode: (
         <div className="max-w-[160px] truncate" title={tag.id}>
@@ -265,6 +269,13 @@ const AdminTag = () => {
         ) : (
           <>
             <Table tableHead={tableHead} tableBody={tableBody} />
+            <AdminPagination
+              page={page} totalPages={Math.max(totalPages, 1)}
+              onPageChange={setPage}
+              pageSize={pageSize}
+              onPageSizeChange={s => { setPageSize(s); setPage(1); }}
+              total={filteredTags.length}
+            />
           </>
         )}
       </div>

@@ -37,11 +37,12 @@ type CheckoutHistoryRep = {
     createdAt: Date;
 }
 
-export type OrderDetailRep = {
+export type OrderDetailRep = OrderRep & {
 	orderItems: OrderItemRep[];
 	checkoutHistory: CheckoutHistoryRep | null;
 	account?: {
         id: string;
         email: string;
     };
+    paymentUrl?: string;
 };

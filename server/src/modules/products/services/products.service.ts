@@ -165,6 +165,30 @@ export class ProductsService {
         return this.mapProduct(product);
     }
 
+    async getRelatedProducts(id: string, limit = 8): Promise<ProductResponseDto[]> {
+        const product = await this.prismaService.prismaClient.products.findUnique({
+            where: { id },
+            select: { categoryId: true },
+        });
+
+        if (!product) {
+            throw new NotFoundException('Sản phẩm không tồn tại');
+        }
+
+        const related = await this.prismaService.prismaClient.products.findMany({
+            where: {
+                categoryId: product.categoryId,
+                id: { not: id },
+                isDelete: false,
+                status: 'Active',
+            },
+            take: limit,
+            include: PRODUCT_INCLUDE,
+        });
+
+        return related.map((p) => this.mapProduct(p));
+    }
+
     async createProduct(data: CreateProductDto): Promise<ProductResponseDto> {
         const newProduct = await this.prismaService.prismaClient.products.create({
             data: {

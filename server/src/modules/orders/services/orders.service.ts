@@ -1,9 +1,11 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CheckoutHistory, CommonStatus, OrderItems, Orders, Prisma } from 'prisma/generated/client';
-import { OrderPaymentStatus, OrderStatus } from 'prisma/generated/enums';
+import { OrderPaymentMethod, OrderPaymentStatus, OrderStatus } from 'prisma/generated/enums';
 import { PrismaService } from 'src/configs/prisma-client.config';
 import { CreateOrderDto } from '../dto/requests/request.dto';
 import { OrderDetailResponseDto, OrderResponseDto } from '../dto/responses/response.dto';
+import { PaymentsService } from 'src/modules/payments/services/payments.service';
+import { Cron } from '@nestjs/schedule';
 
 type OrderWithRelations = Orders & {
     orderItems: OrderItems[];
@@ -54,10 +56,14 @@ type ProductWithProperty = Prisma.ProductsGetPayload<{
 
 @Injectable()
 export class OrdersService {
-    constructor(private readonly prismaService: PrismaService) {}
+    constructor(
+        private readonly prismaService: PrismaService,
+        private readonly paymentsService: PaymentsService,
+    ) {}
 
-    async getAllOrders(): Promise<OrderResponseDto[]> {
+    async getAllOrders(status?: OrderStatus): Promise<OrderResponseDto[]> {
         const orders = await this.prismaService.prismaClient.orders.findMany({
+            where: status ? { status } : undefined,
             orderBy: {
                 createdAt: 'desc',
             },
@@ -77,6 +83,37 @@ export class OrdersService {
         }
 
         return this.mapOrderDetail(order);
+    }
+
+    async getPaymentStatus(id: string): Promise<{
+        id: string;
+        paymentStatus: string;
+        paymentMethod: string;
+        accountId: string;
+        totalAmount: number;
+    }> {
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                paymentStatus: true,
+                paymentMethod: true,
+                accountId: true,
+                totalAmount: true,
+            },
+        });
+
+        if (!order) {
+            throw new NotFoundException(`Không có order ${id}`);
+        }
+
+        return {
+            id: order.id,
+            paymentStatus: order.paymentStatus,
+            paymentMethod: order.paymentMethod,
+            accountId: order.accountId,
+            totalAmount: order.totalAmount,
+        };
     }
 
     async createOrder(accountId: string, createOrderDto: CreateOrderDto): Promise<OrderDetailResponseDto> {
@@ -149,7 +186,44 @@ export class OrdersService {
             return newOrder.id;
         });
 
-        return this.getOrderById(orderId);
+        const orderDetail = await this.getOrderById(orderId);
+
+        // Nếu thanh toán Momo, tạo payment link và trả về paymentUrl
+        if (createOrderDto.paymentMethod === OrderPaymentMethod.Momo) {
+            const momoPayment = await this.paymentsService.paymentMomoCreate({
+                total: orderDetail.totalAmount,
+                orderId: orderDetail.id,
+                orderInfo: `Thanh toán đơn hàng Green Life #${orderDetail.id}`,
+                lang: 'vi',
+                extraData: {
+                    id: account.id,
+                    email: account.email,
+                },
+            }, {
+                items: orderDetail.orderItems.map(item => ({
+                    id: item.productId,
+                    name: `Sản phẩm #${item.productId}`,
+                    description: '',
+                    imageUrl: '',
+                    price: item.price,
+                    quantity: item.quantity,
+                    unit: 'Cái',
+                    totalPrice: item.amount,
+                })),
+                userInfo: {
+                    name: orderDetail.recipientName,
+                    phoneNumber: orderDetail.recipientPhone,
+                    email: account.email,
+                },
+            });
+
+            return {
+                ...orderDetail,
+                paymentUrl: momoPayment.payment.paymentUrl,
+            };
+        }
+
+        return orderDetail;
     }
 
     private aggregateOrderItems(createOrderDto: CreateOrderDto): Map<string, number> {
@@ -235,5 +309,121 @@ export class OrdersService {
         });
 
         return orders.map((order) => this.mapOrder(order));
+    }
+
+    /* ───────────── Order status management ───────────── */
+
+    // Thứ tự trạng thái đơn hàng
+    private readonly STATUS_FLOW: Record<OrderStatus, OrderStatus | null> = {
+        [OrderStatus.Pending]: OrderStatus.Confirm,
+        [OrderStatus.Confirm]: OrderStatus.InTransit,
+        [OrderStatus.InTransit]: OrderStatus.Done,
+        [OrderStatus.Done]: null,
+        [OrderStatus.Cancled]: null,
+    };
+
+    async advanceOrderStatus(id: string): Promise<OrderDetailResponseDto> {
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: { id },
+            include: ORDER_DETAIL_INCLUDE,
+        });
+
+        if (!order) throw new NotFoundException(`Không có order ${id}`);
+
+        if (order.paymentStatus !== OrderPaymentStatus.Paid && order.paymentMethod !== OrderPaymentMethod.Cod) {
+            throw new BadRequestException('Đơn hàng chưa được thanh toán, không thể xử lý');
+        }
+
+        const nextStatus = this.STATUS_FLOW[order.status as OrderStatus];
+        if (!nextStatus) {
+            throw new BadRequestException(`Đơn hàng đã ở trạng thái cuối: ${order.status}`);
+        }
+
+        const updated = await this.prismaService.prismaClient.orders.update({
+            where: { id },
+            data: { status: nextStatus },
+            include: ORDER_DETAIL_INCLUDE,
+        });
+
+        return this.mapOrderDetail(updated);
+    }
+
+    async cancelOrder(id: string): Promise<OrderDetailResponseDto> {
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: { id },
+            include: ORDER_DETAIL_INCLUDE,
+        });
+
+        if (!order) throw new NotFoundException(`Không có order ${id}`);
+
+        if (order.status === OrderStatus.Done || order.status === OrderStatus.Cancled) {
+            throw new BadRequestException(`Không thể hủy đơn ở trạng thái ${order.status}`);
+        }
+
+        const updated = await this.prismaService.prismaClient.orders.update({
+            where: { id },
+            data: { status: OrderStatus.Cancled },
+            include: ORDER_DETAIL_INCLUDE,
+        });
+
+        return this.mapOrderDetail(updated);
+    }
+
+    // Cron: tự động hủy đơn Chưa thanh toán (non-COD) sau 30 phút
+    @Cron('*/5 * * * *') // kiểm tra mỗi 5 phút
+    async cancelExpiredOrders(): Promise<void> {
+        const EXPIRY_MINUTES = 30;
+        const expiredBefore = new Date(Date.now() - EXPIRY_MINUTES * 60 * 1000);
+
+        const expired = await this.prismaService.prismaClient.orders.findMany({
+            where: {
+                status: OrderStatus.Pending,
+                paymentStatus: OrderPaymentStatus.UnPaid,
+                paymentMethod: { not: OrderPaymentMethod.Cod },
+                createdAt: { lt: expiredBefore },
+            },
+            select: { id: true },
+        });
+
+        if (expired.length === 0) return;
+
+        const ids = expired.map(o => o.id);
+        await this.prismaService.prismaClient.orders.updateMany({
+            where: { id: { in: ids } },
+            data: { status: OrderStatus.Cancled },
+        });
+
+        console.log(`[Cron] Tự động hủy ${ids.length} đơn hàng quá hạn thanh toán.`);
+    }
+
+    /* ───────────── Checkout history ───────────── */
+    async getCheckoutHistoryByAccount(accountId: string) {
+        const histories = await this.prismaService.prismaClient.checkoutHistory.findMany({
+            where: { accountId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                order: {
+                    select: {
+                        id: true,
+                        totalAmount: true,
+                        status: true,
+                        paymentMethod: true,
+                        paymentStatus: true,
+                        createdAt: true,
+                        recipientName: true,
+                    },
+                },
+            },
+        });
+
+        return histories.map(h => ({
+            id: h.id,
+            paymentType: h.paymentType,
+            amount: h.amount,
+            requestId: h.requestId,
+            createdAt: h.createdAt,
+            orderId: h.orderId,
+            order: h.order,
+        }));
     }
 }

@@ -53,37 +53,12 @@ const AdminSidebar = ({ isOpenSidebar, setIsOpenSidebar }: { isOpenSidebar: bool
             ]
         },
         {
-            title: "Hóa đơn",
-            items: [
-                {
-                    icon: "fa-solid fa-box-tissue",
-                    des: "Nhập hàng",
-                    url: ""
-                },
-                {
-                    icon: "fa-solid fa-file-export",
-                    des: "Xuất hàng",
-                    url: ""
-                }
-            ]
-        },
-        {
             title: "Cổng thanh toán",
             items: [
                 {
-                    icon: "fa-solid fa-building-columns",
-                    des: "VNPay",
-                    url: ""
-                },
-                {
-                    icon: "fa-solid fa-s",
-                    des: "Seapay",
-                    url: ""
-                },
-                {
-                    icon: "fa-solid fa-m",
-                    des: "Momo",
-                    url: ""
+                    icon: "fa-solid fa-clock-rotate-left",
+                    des: "Lịch sử giao dịch",
+                    url: "/admin/payments"
                 },
             ]
         }

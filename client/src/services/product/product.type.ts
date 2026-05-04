@@ -17,6 +17,18 @@ type ProductRep = {
   categoryId: string;
 };
 
+type PaginationRep = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+type ProductPageRep = {
+  data: ProductRep[];
+  pagination?: PaginationRep;
+};
+
 type PropertyRep = {
   id: string;
   productId: string;
@@ -78,4 +90,6 @@ export type {
   UpdateProductForm,
   ProductStatus,
   ProductUnit,
+  PaginationRep,
+  ProductPageRep,
 };

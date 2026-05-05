@@ -14,6 +14,12 @@ const AdminSidebar = ({
     {
       title: "Trang chủ",
       items: [
+        // dashboard
+        {
+          icon: "fa-solid fa-gauge",
+          des: "Dashboard",
+          url: "/admin/",
+        },
         {
           icon: "fa-solid fa-chart-column",
           des: "Thống kê",

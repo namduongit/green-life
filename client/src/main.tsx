@@ -16,6 +16,7 @@ import AdminTag from "./pages/admin-page/tag/tag";
 import AdminCategory from "./pages/admin-page/category/category";
 import AdminOrder from "./pages/admin-page/order/order";
 import AdminPayments from "./pages/admin-page/payments/payments";
+import AdminStatistics from "./pages/admin-page/statistics/statistics";
 import { AuthProvider } from "./contexts/auth/auth";
 import { CardProvider } from "./contexts/cart/cart";
 import ProductPage from "./pages/product/product";
@@ -76,7 +77,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/admin" element={<AdminLayout />}>
                 <Route path="/admin/" element={<AdminDashboard />} />
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/statistics" element={<AdminDashboard />} />
+                <Route path="/admin/statistics" element={<AdminStatistics />} />
                 <Route path="/admin/accounts" element={<AdminAccount />} />
                 <Route path="/admin/products" element={<AdminProduct />} />
                 <Route path="/admin/orders" element={<AdminOrder />} />

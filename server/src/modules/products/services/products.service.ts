@@ -130,6 +130,26 @@ export class ProductsService {
         return hotProducts.map((hotProduct) => this.mapProduct(hotProduct.product));
     }
 
+    /**
+     * Aggregate total sold quantity and revenue per product using order items.
+     * Returns array of { productId, totalSold, totalRevenue }.
+     */
+    async getSalesAggregates() {
+        const salesData = await this.prismaService.prismaClient.orderItems.groupBy({
+            by: ['productId'],
+            _sum: {
+                quantity: true,
+                amount: true,
+            },
+        });
+
+        return salesData.map((s) => ({
+            productId: s.productId,
+            totalSold: s._sum.quantity ?? 0,
+            totalRevenue: s._sum.amount ?? 0,
+        }));
+    }
+
     async getAllProducts(
         filter: SearchParamsQuery<ProductsWhereInput, ProductsOrderByWithRelationInput>,
         /**

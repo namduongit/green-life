@@ -1,5 +1,5 @@
 import { api } from "../../lib/api/api";
-import type { ProductPageRep, ProductRep } from "./product.type";
+import type { ProductRep } from "./product.type";
 
 export const getAllProducts = async (page: number = 0, pageSize: number = 10, hotProducts?: boolean) => {
     const response = await api.get<ProductRep[]>(`/api/products`, {

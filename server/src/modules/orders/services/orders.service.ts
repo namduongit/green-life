@@ -61,15 +61,16 @@ export class OrdersService {
         private readonly paymentsService: PaymentsService,
     ) {}
 
-    async getAllOrders(status?: OrderStatus): Promise<OrderResponseDto[]> {
+    async getAllOrders(status?: OrderStatus): Promise<OrderDetailResponseDto[]> {
         const orders = await this.prismaService.prismaClient.orders.findMany({
             where: status ? { status } : undefined,
+            include: ORDER_DETAIL_INCLUDE,
             orderBy: {
                 createdAt: 'desc',
             },
         });
 
-        return orders.map((order) => this.mapOrder(order));
+        return orders.map((order) => this.mapOrderDetail(order));
     }
 
     async getOrderById(id: string): Promise<OrderDetailResponseDto> {

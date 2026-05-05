@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Banner1 from "../../assets/home/banner.png";
 import Banner2 from "../../assets/home/banner2.png";
 import Banner3 from "../../assets/home/banner3.png";
@@ -14,7 +14,26 @@ import Icon6 from "../../assets/home/icon6.svg";
 
 const HomePage = () => {
     const [products, setProducts] = useState<ProductRep[]>([]);
+    const [hotProducts, setHotProducts] = useState<ProductRep[]>([]);
+    const [currentHotSlide, setCurrentHotSlide] = useState(0);
     const { query } = useExecute();
+
+    const hotProductSlides = useMemo(() => {
+        const itemsPerSlide = 4;
+        const slides: ProductRep[][] = [];
+
+        for (let index = 0; index < hotProducts.length; index += itemsPerSlide) {
+            slides.push(hotProducts.slice(index, index + itemsPerSlide));
+        }
+
+        return slides;
+    }, [hotProducts]);
+
+    const canSlideHotProducts = hotProductSlides.length > 1;
+    const safeCurrentHotSlide = Math.min(
+        currentHotSlide,
+        Math.max(hotProductSlides.length - 1, 0),
+    );
 
     useEffect(() => {
         const loadProducts = async () => {
@@ -27,10 +46,47 @@ const HomePage = () => {
                 const items = pageData.data ?? pageData;
                 setProducts(items);
             }
+
+            const hotResult = await query<ProductRep[]>(
+                getAllProducts(1, 8, true),
+            );
+
+            if (hotResult?.data) {
+                setHotProducts(hotResult.data);
+            }
         };
 
         loadProducts();
-    }, []);
+    }, [query]);
+
+    const moveHotSlide = (direction: "next" | "prev") => {
+        if (!canSlideHotProducts) {
+            return;
+        }
+
+        if (direction === "next") {
+            setCurrentHotSlide(prev => (prev + 1) % hotProductSlides.length);
+            return;
+        }
+
+        setCurrentHotSlide(
+            prev => (prev - 1 + hotProductSlides.length) % hotProductSlides.length,
+        );
+    };
+
+    useEffect(() => {
+        if (!canSlideHotProducts) {
+            return;
+        }
+
+        const intervalId = window.setInterval(() => {
+            setCurrentHotSlide(prev => (prev + 1) % hotProductSlides.length);
+        }, 4000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [canSlideHotProducts, hotProductSlides.length]);
 
     return (
         <div className="container mx-auto py-10 space-y-20">
@@ -247,6 +303,87 @@ const HomePage = () => {
                     </div>
                 </div>
             </div>
+            {hotProductSlides.length > 0 && (
+                <div>
+                    <div className="flex items-center justify-center">
+                        <h4 className="text-3xl lg:text-5xl font-bold text-[rgb(51,102,51)]">
+                            Sản phẩm <span className="text-[#66cc00]">bán chạy</span>
+                        </h4>
+                    </div>
+                    <div className="flex items-center justify-center mt-3">
+                        <img
+                            src="https://green-life.com.vn/wp-content/uploads/2025/07/svg-trai-dat-14.svg"
+                            alt="earth-banner"
+                            className="w-50"
+                        />
+                    </div>
+
+                    <div className="mt-8 relative pb-1">
+                        <div className="overflow-hidden">
+                            <div
+                                className="flex transition-transform duration-500 ease-out"
+                                style={{ transform: `translateX(-${safeCurrentHotSlide * 100}%)` }}
+                            >
+                                {hotProductSlides.map((slide, slideIndex) => (
+                                    <div
+                                        key={`hot-slide-${slideIndex}`}
+                                        className="w-full shrink-0"
+                                    >
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                            {slide.map(product => (
+                                                <CardProduct
+                                                    key={product.id}
+                                                    product={product}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* {canSlideHotProducts && (
+                            <>
+                                <button
+                                    type="button"
+                                    aria-label="Xem sản phẩm bán chạy trước"
+                                    onClick={() => moveHotSlide("prev")}
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 lg:-translate-x-5 w-10 h-10 rounded-full bg-white/90 text-[rgb(51,102,51)] shadow-md cursor-pointer"
+                                >
+                                    &#8249;
+                                </button>
+                                <button
+                                    type="button"
+                                    aria-label="Xem sản phẩm bán chạy tiếp theo"
+                                    onClick={() => moveHotSlide("next")}
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 lg:translate-x-5 w-10 h-10 rounded-full bg-white/90 text-[rgb(51,102,51)] shadow-md cursor-pointer"
+                                >
+                                    &#8250;
+                                </button>
+                            </>
+                        )} */}
+                    </div>
+
+                    {canSlideHotProducts && (
+                        <div className="flex items-center justify-center gap-2 mt-5">
+                            {hotProductSlides.map((_, dotIndex) => (
+                                <button
+                                    key={`hot-dot-${dotIndex}`}
+                                    type="button"
+                                    aria-label={`Đi tới slide ${dotIndex + 1}`}
+                                    onClick={() => setCurrentHotSlide(dotIndex)}
+                                    className={`h-2.5 rounded-full cursor-pointer transition-all ${
+                                        dotIndex === safeCurrentHotSlide
+                                            ? "w-8 bg-[rgb(51,102,51)]"
+                                            : "w-2.5 bg-gray-300"
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+            
         </div>
     )
 }

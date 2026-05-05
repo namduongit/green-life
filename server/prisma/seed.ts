@@ -102,6 +102,91 @@ async function main() {
         });
     }
 
+    // ACCOUNTS
+    await prisma.accounts.createMany({
+        data: Array.from({ length: 8 }).map((_, index) => ({
+            email: faker.internet.email({ firstName: `user${index}` }).toLowerCase(),
+            password: '123456',
+            role: index === 0 ? 'Admin' : 'User',
+            isLock: false,
+        })),
+    });
+    const accounts = await prisma.accounts.findMany();
+
+    // ADDRESSES
+    for (const account of accounts) {
+        await prisma.addresses.create({
+            data: {
+                accountId: account.id,
+                fullName: faker.person.fullName(),
+                phone: `0${faker.string.numeric(9)}`,
+                province: faker.location.state(),
+                ward: faker.location.city(),
+                detail: faker.location.streetAddress(),
+                isDefault: true,
+            },
+        });
+    }
+
+    // ORDERS + ORDER ITEMS + CHECKOUT HISTORY
+    const orderStatuses = ['Pending', 'Confirmed', 'InTransit', 'Received', 'Cancelled'] as const;
+    const paymentMethods = ['Cod', 'Momo', 'SePay'] as const;
+
+    for (let i = 0; i < 30; i++) {
+        const account = faker.helpers.arrayElement(accounts);
+        const orderItemsCount = faker.number.int({ min: 1, max: 4 });
+        const selectedProducts = faker.helpers.arrayElements(products, orderItemsCount);
+
+        const itemPayload = selectedProducts.map((product) => {
+            const quantity = faker.number.int({ min: 1, max: 5 });
+            const price = faker.number.int({ min: 10000, max: 300000 });
+            const amount = quantity * price;
+            return {
+                productId: product.id,
+                quantity,
+                price,
+                amount,
+            };
+        });
+
+        const totalQuantity = itemPayload.reduce((sum, item) => sum + item.quantity, 0);
+        const totalAmount = itemPayload.reduce((sum, item) => sum + item.amount, 0);
+        const status = faker.helpers.arrayElement(orderStatuses);
+        const paymentMethod = faker.helpers.arrayElement(paymentMethods);
+        const paymentStatus = status === 'Received' ? 'Paid' : faker.helpers.arrayElement(['UnPaid', 'Paid'] as const);
+
+        const order = await prisma.orders.create({
+            data: {
+                accountId: account.id,
+                recipientName: faker.person.fullName(),
+                recipientPhone: `0${faker.string.numeric(9)}`,
+                recipientProvince: faker.location.state(),
+                recipientWard: faker.location.city(),
+                recipientDetail: faker.location.streetAddress(),
+                paymentMethod,
+                status,
+                paymentStatus,
+                totalAmount,
+                totalQuantity,
+                orderItems: {
+                    create: itemPayload,
+                },
+            },
+        });
+
+        if (paymentStatus === 'Paid') {
+            await prisma.checkoutHistory.create({
+                data: {
+                    orderId: order.id,
+                    accountId: account.id,
+                    paymentType: paymentMethod,
+                    amount: totalAmount,
+                    requestId: faker.string.uuid(),
+                },
+            });
+        }
+    }
+
     console.log('✅ Database seeded');
 }
 

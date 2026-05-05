@@ -114,7 +114,14 @@ export class ProductsService {
             const haveCalculated = await this.calculateHotProducts();
 
             if (!haveCalculated) {
-                return [];
+                // lấy random 10 sản phẩm nếu chưa có sản phẩm hot nào được tính toán
+                const randomProducts = await this.prismaService.prismaClient.products.findMany({
+                    where: { isDelete: false },
+                    take: 10,
+                    include: PRODUCT_INCLUDE,
+                });
+
+                return randomProducts.map((product) => this.mapProduct(product));
             }
 
             return this.getHotProducts();

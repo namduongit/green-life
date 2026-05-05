@@ -1,20 +1,16 @@
 import { api } from "../../lib/api/api";
 import type { ProductPageRep, ProductRep } from "./product.type";
 
-export const getAllProducts = async (params: {
-    page?: number;
-    pageSize?: number;
-    nameContains?: string;
-    categoryId?: string;
-} = {}) => {
-    const { page = 1, pageSize = 12, nameContains, categoryId } = params;
-    const qs = new URLSearchParams();
-    qs.set("page", String(page));
-    qs.set("pageSize", String(pageSize));
-    if (nameContains) qs.set("property.name_contains", nameContains);
-    if (categoryId)   qs.set("category.id", categoryId);
-
-    const response = await api.get<ProductPageRep>(`/api/products?${qs.toString()}`);
+export const getAllProducts = async (page: number = 0, pageSize: number = 10, hotProducts?: boolean) => {
+    const response = await api.get<ProductRep[]>(`/api/products`, {
+        // ?page=${page}&pageSize=${pageSize}${hotProducts ? '&hotProducts=true' : ''}`
+        params: {
+            page,
+            pageSize,
+            hotProducts: hotProducts ? true : undefined,
+        },
+    })
+    
     return response;
 };
 

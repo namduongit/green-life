@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { useAuthContext } from "../../contexts/auth/auth";
-import { getOrdersByAccountId } from "../../services/order/order.service";
+import { useToastContext } from "../../contexts/toast-message/toast-message";
+import { getOrdersByAccountId, getOrderPaymentStatus, repayOrder } from "../../services/order/order.service";
 import type { OrderRep } from "../../services/order/order.type";
 import { useExecute } from "../../hooks/execute";
 
 export const OrderStatus = {
     Pending: "Pending",
-    Confirm: "Confirm",
+    Confirmed: "Confirmed",
     InTransit: "InTransit",
-    Done: "Done",
-    Cancled: "Cancled",
+    Received: "Received",
+    Cancelled: "Cancelled",
 } as const;
 
 type OrderStatusKey = keyof typeof OrderStatus | "All";
@@ -37,7 +38,7 @@ const STATUS_META: Record<string, {
         sidebarActive: "bg-amber-500 text-white",
         icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
     },
-    Confirm: {
+    Confirmed: {
         label: "Đã xác nhận", shortLabel: "Đã xác nhận",
         color: "text-blue-700", badgeBg: "bg-blue-50", badgeText: "text-blue-700",
         dot: "bg-blue-500", borderAccent: "bg-blue-500",
@@ -51,14 +52,14 @@ const STATUS_META: Record<string, {
         sidebarActive: "bg-orange-500 text-white",
         icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="1" y="3" width="15" height="13" rx="1" /><path d="M16 8h4l3 3v5h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>,
     },
-    Done: {
-        label: "Đã giao thành công", shortLabel: "Đã giao",
+    Received: {
+        label: "Đã nhận hàng", shortLabel: "Đã nhận",
         color: "text-green-700", badgeBg: "bg-green-50", badgeText: "text-green-700",
         dot: "bg-green-500", borderAccent: "bg-green-500",
         sidebarActive: "bg-[rgb(51,102,51)] text-white",
         icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>,
     },
-    Cancled: {
+    Cancelled: {
         label: "Đã huỷ", shortLabel: "Đã huỷ",
         color: "text-red-700", badgeBg: "bg-red-50", badgeText: "text-red-700",
         dot: "bg-red-400", borderAccent: "bg-red-400",
@@ -80,11 +81,12 @@ const PAYMENT_STATUS_META: Record<string, { label: string; bg: string; text: str
     Paid:   { label: "Đã thanh toán",   bg: "bg-green-50 border border-green-100", text: "text-green-700" },
 };
 
-const SIDEBAR_ORDER: OrderStatusKey[] = ["All", "Pending", "Confirm", "InTransit", "Done", "Cancled"];
+const SIDEBAR_ORDER: OrderStatusKey[] = ["All", "Pending", "Confirmed", "InTransit", "Received", "Cancelled"];
 
 /* ─────────────── Page ─────────────── */
 const OrderPage = () => {
     const { state } = useAuthContext();
+    const { showToast } = useToastContext();
     const location = useLocation();
     const navigate = useNavigate();
     const { query, loading } = useExecute();
@@ -96,6 +98,68 @@ const OrderPage = () => {
 
     const [activeStatus, setActiveStatus] = useState<OrderStatusKey>(getStatusFromUrl);
     const [orders, setOrders] = useState<OrderRep[]>([]);
+    const [repayingId, setRepayingId] = useState<string | null>(null);
+    const [repayQrUrl, setRepayQrUrl] = useState<string | null>(null);
+    const [repayOrderId, setRepayOrderId] = useState<string | null>(null);
+    const repayPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Polling 5s khi modal QR repay đang mở
+    useEffect(() => {
+        if (repayOrderId && repayQrUrl) {
+            repayPollRef.current = setInterval(async () => {
+                try {
+                    const res = await getOrderPaymentStatus(repayOrderId);
+                    // res.data là envelope: { statusCode, message, data: { paymentStatus }, error }
+                    const paymentStatus = (res?.data as any)?.data?.paymentStatus ?? (res?.data as any)?.paymentStatus;
+                    if (paymentStatus === "Paid") {
+                        clearInterval(repayPollRef.current!);
+                        repayPollRef.current = null;
+                        setRepayQrUrl(null);
+                        setRepayOrderId(null);
+                        showToast("Success", "🎉 Thanh toán thành công! Đơn hàng đang được xử lý.");
+                        // Reload lại danh sách đơn
+                        if (state) {
+                            query(getOrdersByAccountId(state.uid)).then(r => setOrders(r?.data || []));
+                        }
+                    }
+                } catch (_) { /* ignore */ }
+            }, 5000);
+        }
+        return () => {
+            if (repayPollRef.current) {
+                clearInterval(repayPollRef.current);
+                repayPollRef.current = null;
+            }
+        };
+    }, [repayOrderId, repayQrUrl]);
+
+    const handleRepay = async (order: OrderRep) => {
+        if (!state) return;
+        setRepayingId(order.id);
+        try {
+            const res = await repayOrder(order.id, state.uid, state.email);
+            // Server wraps: { statusCode, message, data: { paymentUrl }, error }
+            // axios response: res.data = server envelope → res.data.data.paymentUrl
+            const paymentUrl: string | undefined =
+                (res?.data as any)?.data?.paymentUrl ?? (res?.data as any)?.paymentUrl;
+            if (paymentUrl) {
+                if (order.paymentMethod === "Momo") {
+                    window.location.href = paymentUrl;
+                } else {
+                    // SePay → hiển thị modal QR
+                    setRepayQrUrl(paymentUrl);
+                    setRepayOrderId(order.id);
+                }
+            }
+        } catch (_) { /* ignore */ }
+        setRepayingId(null);
+    };
+
+    const handleStatusChange = (s: OrderStatusKey) => {
+        const params = new URLSearchParams(location.search);
+        params.set("status", s);
+        navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    };
 
     useEffect(() => { setActiveStatus(getStatusFromUrl()); }, [location.search]);
 
@@ -103,12 +167,6 @@ const OrderPage = () => {
         if (!state) return;
         query(getOrdersByAccountId(state.uid)).then(r => setOrders(r?.data || []));
     }, [state]);
-
-    const handleStatusChange = (s: OrderStatusKey) => {
-        const params = new URLSearchParams(location.search);
-        params.set("status", s);
-        navigate(`${location.pathname}?${params.toString()}`, { replace: true });
-    };
 
     /* ── Unauthenticated ── */
     if (!state) {
@@ -145,6 +203,53 @@ const OrderPage = () => {
 
     return (
         <div className="pb-24 min-h-screen bg-gray-50">
+
+            {/* ── SePay QR Repay Modal ── */}
+            {repayQrUrl && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+                    <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+                        <button
+                            onClick={() => { setRepayQrUrl(null); setRepayOrderId(null); }}
+                            className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl leading-none"
+                        >
+                            ×
+                        </button>
+                        <div className="mb-1 text-green-600">
+                            <i className="fa-solid fa-qrcode text-4xl" />
+                        </div>
+                        <h2 className="text-lg font-bold text-gray-800 mb-1">Thanh toán lại qua SePay</h2>
+                        <p className="text-xs text-gray-500 mb-3">
+                            Quét mã QR bằng ứng dụng ngân hàng hoặc ví điện tử
+                        </p>
+                        <div className="flex justify-center mb-3">
+                            <img
+                                src={repayQrUrl}
+                                alt="SePay QR Code"
+                                className="w-56 h-56 object-contain border-2 border-green-200 rounded-xl p-1"
+                            />
+                        </div>
+                        {repayOrderId && (
+                            <p className="text-xs text-gray-400 mb-3">
+                                Mã đơn hàng: <span className="font-mono text-gray-600">{repayOrderId}</span>
+                            </p>
+                        )}
+                        <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+                            ⚠️ Đơn hàng sẽ tự động hủy sau 30 phút nếu chưa thanh toán
+                        </p>
+                        <div className="flex items-center justify-center gap-2 mb-3 text-xs text-green-600">
+                            <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            Đang chờ xác nhận thanh toán...
+                        </div>
+                        <button
+                            onClick={() => { setRepayQrUrl(null); setRepayOrderId(null); }}
+                            className="w-full rounded-lg bg-green-700 px-4 py-2.5 text-white text-sm font-semibold hover:bg-green-800 transition"
+                        >
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="sm-container mx-auto space-y-5 py-8">
 
                 {/* ── Header ── */}
@@ -155,7 +260,7 @@ const OrderPage = () => {
                             <h1 className="mt-0.5 text-base font-bold text-gray-800">{state.email}</h1>
                         </div>
                         <div className="flex gap-2">
-                            {(["Pending", "InTransit", "Done"] as const).map(s => (
+                            {(["Pending", "InTransit", "Received"] as const).map(s => (
                                 <button
                                     key={s}
                                     type="button"
@@ -211,7 +316,7 @@ const OrderPage = () => {
                         <div className="rounded-xl border border-gray-200 bg-white p-4">
                             <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Chú thích</p>
                             <div className="space-y-2">
-                                {(["Pending", "Confirm", "InTransit", "Done", "Cancled"] as const).map(s => (
+                                {(["Pending", "Confirmed", "InTransit", "Received", "Cancelled"] as const).map(s => (
                                     <div key={s} className="flex items-center gap-2">
                                         <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_META[s].dot}`} />
                                         <span className="text-[12px] text-gray-500">{STATUS_META[s].shortLabel}</span>
@@ -340,19 +445,40 @@ const OrderPage = () => {
                                                         </div>
                                                     </div>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => navigate(`/page/orders/${order.id}`)}
-                                                        className="inline-flex items-center gap-2 rounded-lg border border-[rgb(51,102,51)] bg-[rgb(51,102,51)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2d7a2d]"
-                                                    >
-                                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                                        </svg>
-                                                        Xem chi tiết
-                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                                        </svg>
-                                                    </button>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        {/* Nút thanh toán lại cho SePay/Momo chưa TT */}
+                                                        {order.paymentStatus === "UnPaid" &&
+                                                            (order.paymentMethod === "SePay" || order.paymentMethod === "Momo") &&
+                                                            order.status === "Pending" && (
+                                                            <button
+                                                                type="button"
+                                                                disabled={repayingId === order.id}
+                                                                onClick={() => handleRepay(order)}
+                                                                className="inline-flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60"
+                                                            >
+                                                                {repayingId === order.id ? (
+                                                                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                                                ) : (
+                                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                                                )}
+                                                                Thanh toán lại
+                                                            </button>
+                                                        )}
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => navigate(`/page/orders/${order.id}`)}
+                                                            className="inline-flex items-center gap-2 rounded-lg border border-[rgb(51,102,51)] bg-[rgb(51,102,51)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2d7a2d]"
+                                                        >
+                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                                            </svg>
+                                                            Xem chi tiết
+                                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

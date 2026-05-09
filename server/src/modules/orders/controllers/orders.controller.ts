@@ -11,6 +11,19 @@ export class OrdersController {
         return result;
     }
 
+    @Get('paginated')
+    async getAllPaginated(
+        @Query('page') page: string = '1',
+        @Query('limit') limit: string = '20',
+        @Query('status') status?: string,
+    ) {
+        return this.ordersService.getAllOrdersPaginated(
+            parseInt(page, 10),
+            parseInt(limit, 10),
+            status as any,
+        );
+    }
+
     @Get('/:id')
     async getOrderById(@Param('id') id: string) {
         const result = await this.ordersService.getOrderById(id);

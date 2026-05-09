@@ -3,7 +3,7 @@ import { CheckoutHistory, CommonStatus, OrderItems, Orders, Prisma } from 'prism
 import { OrderPaymentMethod, OrderPaymentStatus, OrderStatus } from 'prisma/generated/enums';
 import { PrismaService } from 'src/configs/prisma-client.config';
 import { CreateOrderDto } from '../dto/requests/request.dto';
-import { OrderDetailResponseDto, OrderResponseDto } from '../dto/responses/response.dto';
+import { OrderDetailResponseDto, OrderPaginationResponseDto, OrderResponseDto } from '../dto/responses/response.dto';
 import { PaymentsService } from 'src/modules/payments/services/payments.service';
 import { Cron } from '@nestjs/schedule';
 
@@ -59,7 +59,7 @@ export class OrdersService {
     constructor(
         private readonly prismaService: PrismaService,
         private readonly paymentsService: PaymentsService,
-    ) {}
+    ) { }
 
     async getAllOrders(status?: OrderStatus): Promise<OrderDetailResponseDto[]> {
         const orders = await this.prismaService.prismaClient.orders.findMany({
@@ -71,6 +71,40 @@ export class OrdersService {
         });
 
         return orders.map((order) => this.mapOrderDetail(order));
+    }
+
+    async getAllOrdersPaginated(
+        page: number,
+        limit: number,
+        status?: OrderStatus,
+    ): Promise<OrderPaginationResponseDto> {
+        if (page < 1 || limit < 1) {
+            throw new BadRequestException('Số trang và số lượng phải lớn hơn 0');
+        }
+
+        const skip = (page - 1) * limit;
+        const where = status ? { status } : undefined;
+
+        const [orders, total] = await Promise.all([
+            this.prismaService.prismaClient.orders.findMany({
+                where,
+                include: ORDER_DETAIL_INCLUDE,
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prismaService.prismaClient.orders.count({ where }),
+        ]);
+
+        return {
+            data: orders.map((order) => this.mapOrderDetail(order)),
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 
     async getOrderById(id: string): Promise<OrderDetailResponseDto> {
@@ -223,6 +257,20 @@ export class OrdersService {
                 paymentUrl: momoPayment.payment.paymentUrl,
             };
         }
+        // Nếu thanh toán SePay, trả về URL mã QR để thanh toán
+        if (createOrderDto.paymentMethod === OrderPaymentMethod.SePay) {
+            const sepayPayment = await this.paymentsService.paymentSeapayCreate(
+                orderDetail.totalAmount,
+                orderDetail.id,
+                account.id,
+                account.email
+            );
+
+            return {
+                ...orderDetail,
+                paymentUrl: sepayPayment.payment.paymentUrl,
+            };
+        }
 
         return orderDetail;
     }
@@ -285,18 +333,18 @@ export class OrdersService {
             })),
             checkoutHistory: order.checkoutHistory
                 ? {
-                      id: order.checkoutHistory.id,
-                      paymentType: order.checkoutHistory.paymentType,
-                      amount: order.checkoutHistory.amount,
-                      requestId: order.checkoutHistory.requestId,
-                      createdAt: order.checkoutHistory.createdAt,
-                  }
+                    id: order.checkoutHistory.id,
+                    paymentType: order.checkoutHistory.paymentType,
+                    amount: order.checkoutHistory.amount,
+                    requestId: order.checkoutHistory.requestId,
+                    createdAt: order.checkoutHistory.createdAt,
+                }
                 : null,
             account: order.account
                 ? {
-                      id: order.account.id,
-                      email: order.account.email,
-                  }
+                    id: order.account.id,
+                    email: order.account.email,
+                }
                 : undefined,
         };
     }
@@ -316,11 +364,11 @@ export class OrdersService {
 
     // Thứ tự trạng thái đơn hàng
     private readonly STATUS_FLOW: Record<OrderStatus, OrderStatus | null> = {
-        [OrderStatus.Pending]: OrderStatus.Confirm,
-        [OrderStatus.Confirm]: OrderStatus.InTransit,
-        [OrderStatus.InTransit]: OrderStatus.Done,
-        [OrderStatus.Done]: null,
-        [OrderStatus.Cancled]: null,
+        [OrderStatus.Pending]: OrderStatus.Confirmed,
+        [OrderStatus.Confirmed]: OrderStatus.InTransit,
+        [OrderStatus.InTransit]: OrderStatus.Received,
+        [OrderStatus.Received]: null,
+        [OrderStatus.Cancelled]: null,
     };
 
     async advanceOrderStatus(id: string): Promise<OrderDetailResponseDto> {
@@ -357,13 +405,13 @@ export class OrdersService {
 
         if (!order) throw new NotFoundException(`Không có order ${id}`);
 
-        if (order.status === OrderStatus.Done || order.status === OrderStatus.Cancled) {
+        if (order.status === OrderStatus.Received || order.status === OrderStatus.Cancelled) {
             throw new BadRequestException(`Không thể hủy đơn ở trạng thái ${order.status}`);
         }
 
         const updated = await this.prismaService.prismaClient.orders.update({
             where: { id },
-            data: { status: OrderStatus.Cancled },
+            data: { status: OrderStatus.Cancelled },
             include: ORDER_DETAIL_INCLUDE,
         });
 
@@ -391,7 +439,7 @@ export class OrdersService {
         const ids = expired.map(o => o.id);
         await this.prismaService.prismaClient.orders.updateMany({
             where: { id: { in: ids } },
-            data: { status: OrderStatus.Cancled },
+            data: { status: OrderStatus.Cancelled },
         });
 
         console.log(`[Cron] Tự động hủy ${ids.length} đơn hàng quá hạn thanh toán.`);

@@ -30,6 +30,8 @@ import ImagePage from "./pages/image/image";
 import ProductDetailPage from "./pages/product-detail/product-detail";
 import CheckoutSuccessPage from "./pages/checkout-success/checkout-success";
 import TransactionPage from "./pages/transaction/transaction";
+import ProtectedAdminRoute from "./components/protected-route/admin-protected-route";
+import ProtectedPublicRoute from "./components/protected-route/public-protected-route";
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
@@ -41,9 +43,11 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/" element={<Layout />}>
                 {/* Home page */}
                 <Route path="/" element={<HomePage />} />
-                {/* Auth service page */}
-                <Route path="/auth/login" element={<LoginPage />} />
-                <Route path="/auth/register" element={<RegisterPage />} />
+                {/* Auth service page — chỉ cho vào khi chưa đăng nhập */}
+                <Route element={<ProtectedPublicRoute />}>
+                  <Route path="/auth/login" element={<LoginPage />} />
+                  <Route path="/auth/register" element={<RegisterPage />} />
+                </Route>
 
                 {/* Feature service page */}
                 <Route path="/page/product" element={<ProductPage />} />
@@ -73,19 +77,19 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="/page/image" element={<ImagePage />} />
               </Route>
 
-              {/* Admin service page */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route path="/admin/" element={<AdminDashboard />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/statistics" element={<AdminStatistics />} />
-                <Route path="/admin/accounts" element={<AdminAccount />} />
-                <Route path="/admin/products" element={<AdminProduct />} />
-                <Route path="/admin/orders" element={<AdminOrder />} />
-                <Route path="/admin/payments" element={<AdminPayments />} />
-                <Route path="/admin/category" element={<AdminCategory />} />
-                <Route path="/admin/tag" element={<AdminTag />} />
-                <Route path="/admin/category" element={<AdminCategory />} />
-                <Route path="/admin/tag" element={<AdminTag />} />
+              {/* Admin service page — chỉ ADMIN mới truy cập */}
+              <Route path="/admin" element={<ProtectedAdminRoute />}>
+                <Route element={<AdminLayout />}>
+                  <Route path="/admin/" element={<AdminDashboard />} />
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/statistics" element={<AdminStatistics />} />
+                  <Route path="/admin/accounts" element={<AdminAccount />} />
+                  <Route path="/admin/products" element={<AdminProduct />} />
+                  <Route path="/admin/orders" element={<AdminOrder />} />
+                  <Route path="/admin/payments" element={<AdminPayments />} />
+                  <Route path="/admin/category" element={<AdminCategory />} />
+                  <Route path="/admin/tag" element={<AdminTag />} />
+                </Route>
               </Route>
             </Routes>
           </CardProvider>

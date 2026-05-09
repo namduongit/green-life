@@ -26,18 +26,18 @@ const formatDateTime = (value: string | Date) =>
 
 const statusLabel: Record<string, string> = {
   Pending: "Chờ xác nhận",
-  Confirm: "Đã xác nhận",
+  Confirmed: "Đã xác nhận",
   InTransit: "Đang giao",
-  Done: "Hoàn thành",
-  Cancled: "Đã hủy",
+  Received: "Đã nhận",
+  Cancelled: "Đã hủy",
 };
 
 const statusClass: Record<string, string> = {
   Pending: "text-yellow-700 bg-yellow-100",
-  Confirm: "text-blue-700 bg-blue-100",
+  Confirmed: "text-blue-700 bg-blue-100",
   InTransit: "text-indigo-700 bg-indigo-100",
-  Done: "text-green-700 bg-green-100",
-  Cancled: "text-red-700 bg-red-100",
+  Received: "text-green-700 bg-green-100",
+  Cancelled: "text-red-700 bg-red-100",
 };
 
 const payClass: Record<string, string> = {
@@ -89,7 +89,7 @@ const AdminDashboard = () => {
 
   const stats = useMemo(() => {
     const totalRevenue = orders.reduce(
-      (sum, order) => sum + (order.status === "Done" ? order.totalAmount : 0),
+      (sum, order) => sum + (order.status === "Received" ? order.totalAmount : 0),
       0,
     );
     const totalPaidOrders = orders.filter(
@@ -124,10 +124,10 @@ const AdminDashboard = () => {
   const orderStatusBreakdown = useMemo(() => {
     const groups = [
       "Pending",
-      "Confirm",
+      "Confirmed",
       "InTransit",
-      "Done",
-      "Cancled",
+      "Received",
+      "Cancelled",
     ] as const;
     return groups.map((status) => {
       const count = orders.filter((order) => order.status === status).length;
@@ -351,7 +351,7 @@ const AdminDashboard = () => {
                     </div>
                     <div className="h-2 rounded-full bg-slate-200">
                       <div
-                        className={`h-2 rounded-full ${item.status === "Done" ? "bg-emerald-500" : item.status === "Cancled" ? "bg-rose-500" : item.status === "InTransit" ? "bg-indigo-500" : item.status === "Confirm" ? "bg-sky-500" : "bg-amber-500"}`}
+                        className={`h-2 rounded-full ${item.status === "Received" ? "bg-emerald-500" : item.status === "Cancelled" ? "bg-rose-500" : item.status === "InTransit" ? "bg-indigo-500" : item.status === "Confirmed" ? "bg-sky-500" : "bg-amber-500"}`}
                         style={{
                           width: `${Math.max(item.percent, item.count > 0 ? 6 : 0)}%`,
                         }}

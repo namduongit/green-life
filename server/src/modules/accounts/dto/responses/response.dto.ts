@@ -6,3 +6,13 @@ export class AccountResponseDto {
     role: string;
     isLock: boolean;
 }
+
+export class AccountPaginationResponseDto {
+    data: AccountResponseDto[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}

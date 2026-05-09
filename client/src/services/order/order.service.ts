@@ -77,6 +77,15 @@ export const getOrderPaymentStatus = async (orderId: string) => {
         paymentMethod: string;
         accountId: string;
         totalAmount: number;
-    }>(`/api/orders/${orderId}/payment-status`);
+    }>(`/api/payment/orders/${orderId}/payment-status`);
+    return response;
+};
+
+/** Tạo lại URL thanh toán cho đơn SePay/Momo chưa TT */
+export const repayOrder = async (orderId: string, accountId: string, email: string) => {
+    const response = await api.post<{ paymentUrl: string }>(
+        `/api/payment/orders/${orderId}/repay`,
+        { accountId, email },
+    );
     return response;
 };

@@ -1,18 +1,55 @@
 import { api } from "../../lib/api/api";
 import type { ProductRep } from "./product.type";
 
-export const getAllProducts = async (page: number = 0, pageSize: number = 10, hotProducts?: boolean) => {
-    const response = await api.get<ProductRep[]>(`/api/products`, {
-        // ?page=${page}&pageSize=${pageSize}${hotProducts ? '&hotProducts=true' : ''}`
-        params: {
-            page,
-            pageSize,
-            hotProducts: hotProducts ? true : undefined,
-        },
-    })
-    
-    return response;
+export type GetAllProductsOptions = {
+    page?: number;
+    pageSize?: number;
+    nameContains?: string;
+    categoryId?: string;
+    hotProducts?: boolean;
 };
+
+// Overload 1: object options
+export function getAllProducts(options?: GetAllProductsOptions): Promise<any>;
+// Overload 2: positional args (legacy — dùng trong home.tsx)
+export function getAllProducts(page: number, pageSize?: number, hotProducts?: boolean): Promise<any>;
+
+// Implementation
+export async function getAllProducts(
+    optionsOrPage?: GetAllProductsOptions | number,
+    legacyPageSize?: number,
+    legacyHotProducts?: boolean,
+) {
+    let opts: GetAllProductsOptions;
+
+    if (typeof optionsOrPage === "number") {
+        // Dạng positional: getAllProducts(1, 8, true)
+        opts = {
+            page: optionsOrPage,
+            pageSize: legacyPageSize,
+            hotProducts: legacyHotProducts,
+        };
+    } else {
+        // Dạng object: getAllProducts({ page: 1, pageSize: 8 })
+        opts = optionsOrPage ?? {};
+    }
+
+    const { page = 1, pageSize = 10, nameContains, categoryId, hotProducts } = opts;
+
+    // Build flat query params khớp với PrismaQueryPipeline của server
+    const params: Record<string, string> = {
+        page: String(page),
+        pageSize: String(pageSize),
+    };
+
+    if (nameContains) params["property.name_contains"] = nameContains;
+    if (categoryId) params["category.id"] = categoryId;
+    if (hotProducts) params["hotProducts"] = "true";
+
+    const qs = new URLSearchParams(params).toString();
+    const response = await api.get<ProductRep[]>(`/api/products?${qs}`);
+    return response;
+}
 
 export const getProductById = async (id: string) => {
     const response = await api.get<ProductRep>(`/api/products/${id}`);

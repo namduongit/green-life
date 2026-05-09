@@ -14,20 +14,20 @@ import { useModalConfirmContext } from "../../../contexts/modal-confirm/modal-co
 const STATUS_TABS: { label: string; value: string }[] = [
     { label: "Tất cả", value: "" },
     { label: "Chờ xác nhận", value: "Pending" },
-    { label: "Đã xác nhận", value: "Confirm" },
+    { label: "Đã xác nhận", value: "Confirmed" },
     { label: "Đang giao", value: "InTransit" },
-    { label: "Hoàn thành", value: "Done" },
-    { label: "Đã hủy", value: "Cancled" },
+    { label: "Đã nhận", value: "Received" },
+    { label: "Đã hủy", value: "Cancelled" },
 ];
 
 const statusText: Record<OrderStatus, string> = {
-    Pending: "Chờ xác nhận", Confirm: "Đã xác nhận",
-    InTransit: "Đang giao", Done: "Hoàn thành", Cancled: "Đã hủy",
+    Pending: "Chờ xác nhận", Confirmed: "Đã xác nhận",
+    InTransit: "Đang giao", Received: "Đã nhận", Cancelled: "Đã hủy",
 };
 const statusClass: Record<OrderStatus, string> = {
-    Pending: "text-yellow-700 bg-yellow-100", Confirm: "text-blue-700 bg-blue-100",
-    InTransit: "text-indigo-700 bg-indigo-100", Done: "text-green-700 bg-green-100",
-    Cancled: "text-red-700 bg-red-100",
+    Pending: "text-yellow-700 bg-yellow-100", Confirmed: "text-blue-700 bg-blue-100",
+    InTransit: "text-indigo-700 bg-indigo-100", Received: "text-green-700 bg-green-100",
+    Cancelled: "text-red-700 bg-red-100",
 };
 const payMethodText: Record<OrderPaymentMethod, string> = { Cod: "COD", Momo: "Momo", SePay: "SePay" };
 const payStatusText: Record<OrderPaymentStatus, string> = { UnPaid: "Chưa TT", Paid: "Đã TT" };
@@ -35,7 +35,7 @@ const payStatusClass: Record<OrderPaymentStatus, string> = {
     UnPaid: "text-orange-700 bg-orange-100", Paid: "text-emerald-700 bg-emerald-100",
 };
 const STATUS_FLOW: Record<string, string | null> = {
-    Pending: "Confirm", Confirm: "InTransit", InTransit: "Done", Done: null, Cancled: null,
+    Pending: "Confirmed", Confirmed: "InTransit", InTransit: "Received", Received: null, Cancelled: null,
 };
 
 const PAGE_SIZES = [10, 20, 50];
@@ -190,7 +190,7 @@ const OrderDetailModal = ({
                         className="px-4 py-2 text-gray-700 bg-white ring-1 ring-gray-300 rounded-lg hover:bg-gray-50 transition text-sm">
                         Đóng
                     </button>
-                    {detail && detail.status !== "Cancled" && detail.status !== "Done" && (
+                    {detail && detail.status !== "Cancelled" && detail.status !== "Received" && (
                         <button
                             onClick={() => onCancel(detail.id).then(onClose)}
                             className="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 transition">
@@ -294,7 +294,7 @@ const AdminOrder = () => {
         total: orders.length,
         totalAmount: orders.reduce((s, o) => s + o.totalAmount, 0),
         pending: orders.filter(o => o.status === "Pending").length,
-        done: orders.filter(o => o.status === "Done").length,
+        done: orders.filter(o => o.status === "Received").length,
         paid: orders.filter(o => o.paymentStatus === "Paid").length,
     }), [orders]);
 
@@ -372,7 +372,7 @@ const AdminOrder = () => {
                         className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-50">
                         Xem
                     </button>
-                    {order.status !== "Done" && order.status !== "Cancled" && (
+                    {order.status !== "Received" && order.status !== "Cancelled" && (
                         <>
                             {(order.paymentStatus === "Paid" || order.paymentMethod === "Cod") && STATUS_FLOW[order.status] && (
                                 <button onClick={() => handleAdvance(order.id)}

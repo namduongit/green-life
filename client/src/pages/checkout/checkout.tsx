@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import LayerCart from "../../components/layer-cart/layer-cart";
 import { useCart } from "../../contexts/cart/cart";
 import { useToastContext } from "../../contexts/toast-message/toast-message";
 import { useExecute } from "../../hooks/execute";
-import { createOrder } from "../../services/order/order.service";
+import { createOrder, getOrderPaymentStatus } from "../../services/order/order.service";
 import { getAddresses } from "../../services/address";
 import { OrderPaymentMethod } from "../../lib/types/enums.typs";
 import { useAuthContext } from "../../contexts/auth/auth";
@@ -57,6 +57,36 @@ const CheckoutPage = () => {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [formMessage, setFormMessage] = useState<string | null>(null);
+    const [sepayQrUrl, setSepayQrUrl] = useState<string | null>(null);
+    const [sepayOrderId, setSepayOrderId] = useState<string | null>(null);
+    const sepayPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Polling mỗi 5s khi đang hiển thị QR SePay
+    useEffect(() => {
+        if (sepayOrderId && sepayQrUrl) {
+            sepayPollRef.current = setInterval(async () => {
+                try {
+                    const res = await getOrderPaymentStatus(sepayOrderId);
+                    // res.data là envelope: { statusCode, message, data: { paymentStatus }, error }
+                    const paymentStatus = (res?.data as any)?.data?.paymentStatus ?? (res?.data as any)?.paymentStatus;
+                    if (paymentStatus === "Paid") {
+                        clearInterval(sepayPollRef.current!);
+                        sepayPollRef.current = null;
+                        setSepayQrUrl(null);
+                        setSepayOrderId(null);
+                        showToast("Success", "Thanh toán thành công! Đơn hàng đang được xử lý.");
+                        navigate("/page/checkout-success");
+                    }
+                } catch (_) { /* ignore */ }
+            }, 5000);
+        }
+        return () => {
+            if (sepayPollRef.current) {
+                clearInterval(sepayPollRef.current);
+                sepayPollRef.current = null;
+            }
+        };
+    }, [sepayOrderId, sepayQrUrl]);
 
     const loadAddresses = async () => {
         setLoadingAddresses(true);
@@ -182,11 +212,21 @@ const CheckoutPage = () => {
         } else if (result?.data) {
             await clearCart();
 
+            const orderData = result.data as any;
+            const paymentUrl = orderData?.paymentUrl;
+
             // Nếu thanh toán Momo và có paymentUrl → redirect sang cổng Momo
-            const paymentUrl = (result.data as any)?.paymentUrl;
             if (paymentMethod === "momo" && paymentUrl) {
                 showToast("Success", "Đang chuyển đến cổng thanh toán MoMo...");
                 window.location.href = paymentUrl;
+                return;
+            }
+
+            // Nếu thanh toán SePay và có paymentUrl → hiển thị QR code
+            if (paymentMethod === "sepay" && paymentUrl) {
+                showToast("Success", "Đơn hàng đã được tạo! Vui lòng quét mã QR để thanh toán.");
+                setSepayQrUrl(paymentUrl);
+                setSepayOrderId(orderData?.id ?? null);
                 return;
             }
 
@@ -219,6 +259,53 @@ const CheckoutPage = () => {
     return (
         <div className="pb-20">
             <LayerCart />
+
+            {/* ── SePay QR Modal ── */}
+            {sepayQrUrl && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+                    <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+                        <button
+                            onClick={() => { setSepayQrUrl(null); navigate("/page/orders"); }}
+                            className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl leading-none"
+                        >
+                            ×
+                        </button>
+                        <div className="mb-1 text-green-600">
+                            <i className="fa-solid fa-qrcode text-4xl" />
+                        </div>
+                        <h2 className="text-lg font-bold text-gray-800 mb-1">Thanh toán qua SePay</h2>
+                        <p className="text-xs text-gray-500 mb-3">
+                            Quét mã QR bằng ứng dụng ngân hàng hoặc ví điện tử
+                        </p>
+                        <div className="flex justify-center mb-3">
+                            <img
+                                src={sepayQrUrl}
+                                alt="SePay QR Code"
+                                className="w-56 h-56 object-contain border-2 border-green-200 rounded-xl p-1"
+                            />
+                        </div>
+                        {sepayOrderId && (
+                            <p className="text-xs text-gray-400 mb-4">
+                                Mã đơn hàng: <span className="font-mono text-gray-600">{sepayOrderId}</span>
+                            </p>
+                        )}
+                        <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+                            ⚠️ Đơn hàng sẽ tự động hủy sau 30 phút nếu chưa thanh toán
+                        </p>
+                        <div className="flex items-center justify-center gap-2 mb-3 text-xs text-green-600">
+                            <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                            Đang chờ xác nhận thanh toán...
+                        </div>
+                        <button
+                            onClick={() => { setSepayQrUrl(null); navigate("/page/orders"); }}
+                            className="w-full rounded-lg bg-green-700 px-4 py-2.5 text-white text-sm font-semibold hover:bg-green-800 transition"
+                        >
+                            Đã thanh toán xong
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="sm-container mx-auto flex flex-col lg:flex-row gap-8 py-10">
                 <section className="flex-[2] space-y-8">
                     <div className="border border-gray-200 rounded-xl p-5 space-y-5">

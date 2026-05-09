@@ -42,3 +42,13 @@ export type OrderDetailResponseDto = OrderResponseDto & {
     };
     paymentUrl?: string;
 };
+
+export type OrderPaginationResponseDto = {
+    data: OrderDetailResponseDto[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+};

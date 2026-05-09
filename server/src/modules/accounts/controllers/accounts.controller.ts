@@ -21,6 +21,14 @@ export class AccountsController {
         return this.usersService.findAll(query);
     }
 
+    @Get('paginated')
+    findAllPaginated(
+        @Query('page') page: string = '1',
+        @Query('limit') limit: string = '20',
+    ) {
+        return this.usersService.findAllPaginated(parseInt(page, 10), parseInt(limit, 10));
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.usersService.findOne(id);

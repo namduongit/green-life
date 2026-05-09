@@ -81,6 +81,7 @@ export class AuthService {
         return {
             uid: account.id,
             email: account.email,
+            role: account.role,
             accessToken: token,
             time: {
                 issuedAt: issuedAt,

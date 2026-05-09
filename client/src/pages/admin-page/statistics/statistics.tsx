@@ -569,9 +569,9 @@ const AdminStatistics = () => {
                   reactNode: (
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${
-                        order.status === "Done"
+                        order.status === "Received"
                           ? "bg-green-100 text-green-700"
-                          : order.status === "Cancled"
+                          : order.status === "Cancelled"
                           ? "bg-red-100 text-red-700"
                           : "bg-yellow-100 text-yellow-700"
                       }`}

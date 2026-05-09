@@ -94,7 +94,7 @@ const HomePage = () => {
                 <div>
                     <div className="flex items-center justify-center">
                         <h4 className="text-3xl lg:text-5xl font-bold text-[rgb(51,102,51)]">
-                        Có thể bạn <span className="text-[#66cc00]">chưa biết?</span>
+                            Có thể bạn <span className="text-[#66cc00]">chưa biết?</span>
                         </h4>
                     </div>
                     <div className="flex items-center justify-center mt-3">
@@ -130,7 +130,7 @@ const HomePage = () => {
                     <div>
                         <div className="flex flex-col items-center justify-center gap-5">
                             <h4 className="text-3xl lg:text-5xl font-bold text-[rgb(51,102,51)]">
-                            Tại sao nên sử dụng
+                                Tại sao nên sử dụng
                             </h4>
                             <h4 className="text-3xl lg:text-5xl font-bold text-[#66cc00] ml-2">
                                 Ống Hút Cỏ Bàng?
@@ -146,15 +146,15 @@ const HomePage = () => {
                     </div>
 
                     <div className="px-5 mt-8 lg:w-160">
-                            <img
-                                src={Banner2}
-                                alt="banner-2"
-                            />
+                        <img
+                            src={Banner2}
+                            alt="banner-2"
+                        />
                     </div>
                 </div>
 
                 <div className="mt-8 flex flex-col">
-                    
+
                     <div className="px-5 mt-8 flex flex-col gap-6">
                         <div className="flex items-center gap-3">
                             <div className="w-40 md:w-20">
@@ -235,7 +235,7 @@ const HomePage = () => {
                 <div>
                     <div className="flex items-center justify-center">
                         <h4 className="text-3xl lg:text-5xl font-bold text-[rgb(51,102,51)]">
-                        Sản phẩm của <span className="text-[#66cc00]">GREENLIFE</span>
+                            Sản phẩm của <span className="text-[#66cc00]">GREENLIFE</span>
                         </h4>
                     </div>
                     <div className="flex items-center justify-center mt-3">
@@ -257,7 +257,7 @@ const HomePage = () => {
                         ))}
                     </div>
                 )}
-                
+
             </div>
 
             <div className="lg:flex lg:gap-5">
@@ -267,7 +267,7 @@ const HomePage = () => {
                 <div className="mt-6">
                     <div className="flex flex-col gap-2">
                         <h4 className="text-3xl lg:text-5xl font-bold text-[rgb(51,102,51)]">
-                        Thành phần của
+                            Thành phần của
                         </h4>
                         <h4 className="text-3xl lg:text-5xl font-bold text-[#66cc00]">
                             Ống Hút Cỏ Bàng
@@ -372,18 +372,17 @@ const HomePage = () => {
                                     type="button"
                                     aria-label={`Đi tới slide ${dotIndex + 1}`}
                                     onClick={() => setCurrentHotSlide(dotIndex)}
-                                    className={`h-2.5 rounded-full cursor-pointer transition-all ${
-                                        dotIndex === safeCurrentHotSlide
+                                    className={`h-2.5 rounded-full cursor-pointer transition-all ${dotIndex === safeCurrentHotSlide
                                             ? "w-8 bg-[rgb(51,102,51)]"
                                             : "w-2.5 bg-gray-300"
-                                    }`}
+                                        }`}
                                 />
                             ))}
                         </div>
                     )}
                 </div>
             )}
-            
+
         </div>
     )
 }

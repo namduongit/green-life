@@ -16,7 +16,7 @@ const STATUS_META: Record<string, {
         dot: "bg-amber-400", borderAccent: "from-amber-400 to-amber-500",
         icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
     },
-    Confirm: {
+    Confirmed: {
         label: "Đã xác nhận",
         color: "text-blue-700", badgeBg: "bg-blue-50 border border-blue-100",
         dot: "bg-blue-500", borderAccent: "from-blue-500 to-blue-600",
@@ -28,13 +28,13 @@ const STATUS_META: Record<string, {
         dot: "bg-orange-500", borderAccent: "from-orange-400 to-orange-500",
         icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
     },
-    Done: {
-        label: "Đã giao thành công",
+    Received: {
+        label: "Đã nhận hàng",
         color: "text-green-700", badgeBg: "bg-green-50 border border-green-100",
         dot: "bg-green-500", borderAccent: "from-green-500 to-green-600",
         icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>,
     },
-    Cancled: {
+    Cancelled: {
         label: "Đã huỷ",
         color: "text-red-700", badgeBg: "bg-red-50 border border-red-100",
         dot: "bg-red-400", borderAccent: "from-red-400 to-red-500",
@@ -54,10 +54,10 @@ const PAYMENT_STATUS_META: Record<string, { label: string; bg: string; text: str
 };
 
 /* ─── Timeline steps ─── */
-const TIMELINE_STEPS = ["Pending", "Confirm", "InTransit", "Done"] as const;
+const TIMELINE_STEPS = ["Pending", "Confirmed", "InTransit", "Received"] as const;
 
 const OrderTimeline = ({ status }: { status: string }) => {
-    if (status === "Cancled") {
+    if (status === "Cancelled") {
         return (
             <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-400 text-white">

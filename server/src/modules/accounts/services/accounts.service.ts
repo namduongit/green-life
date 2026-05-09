@@ -3,7 +3,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/configs/prisma-client.config';
 import { SearchParamsQuery } from 'prisma-searchparams-mapper';
 import { Prisma } from 'prisma/generated/browser';
-import { AccountResponseDto } from '../dto/responses/response.dto';
+import { AccountPaginationResponseDto, AccountResponseDto } from '../dto/responses/response.dto';
 import { CreateAccountDto, UpdateAccountDto } from '../dto/requests/request.dto';
 import * as bcrypt from 'bcrypt';
 
@@ -24,6 +24,40 @@ export class AccountsService {
             role: account.role,
             isLock: account.isLock,
         }));
+    }
+
+    async findAllPaginated(page: number, limit: number): Promise<AccountPaginationResponseDto> {
+        if (page < 1 || limit < 1) {
+            throw new BadRequestException('Số trang và số lượng phải lớn hơn 0');
+        }
+
+        const skip = (page - 1) * limit;
+
+        const [accounts, total] = await Promise.all([
+            this.prismaService.prismaClient.accounts.findMany({
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+            }),
+            this.prismaService.prismaClient.accounts.count(),
+        ]);
+
+        return {
+            data: accounts.map((account) => ({
+                id: account.id,
+                createdAt: account.createdAt,
+                updatedAt: account.updatedAt,
+                email: account.email,
+                role: account.role,
+                isLock: account.isLock,
+            })),
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 
     async findOne(id: string): Promise<AccountResponseDto> {

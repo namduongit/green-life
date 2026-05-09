@@ -15,13 +15,14 @@ export type Unit = (typeof Unit)[keyof typeof Unit];
 
 export const OrderStatus = {
     Pending: "Pending",
-    Confirm: "Confirm",
+    Confirmed: "Confirmed",
     InTransit: "InTransit",
-    Done: "Done",
-    Cancled: "Cancled",
+    Received: "Received",
+    Cancelled: "Cancelled",
 } as const;
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+
 
 export const OrderPaymentStatus = {
     UnPaid: "UnPaid",

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CryptoUtils } from 'src/utils/crypto.utils';
 import { MomoConstants } from 'src/constants/momo.constants';
+import { SepayConstants } from 'src/constants/sepay.constants';
 import { PaymentRep } from '../dto/responses/response.dto';
 import { v1 } from "uuid";
 import axios from 'axios';
@@ -162,21 +163,151 @@ export class PaymentsService {
         }
     }
 
-    async paymentMomoQuery() {
-
-    }
-
-    async paymentMomoConfirm() {
-
-    }
-
-    async paymentMomoRefund() {
-
-    }
-
     /** */
-    async paymentSeapayCreate() {
+    async paymentSeapayCreate(amount: number, orderId: string, accountId: string, email: string): Promise<PaymentRep> {
+        let endpoint = SepayConstants.Enpoint;
+        endpoint = endpoint.replace('AMOUNT', amount.toString()).replace('ORDERID', orderId);
 
+        const requestId = v1();
+
+        return {
+            requestId: requestId,
+            orderId: orderId,
+            createDate: null,
+            expireDate: null,
+            provider: "SePay",
+            transaction: {
+                account: {
+                    id: accountId,
+                    email: email
+                },
+                quantity: 0,
+                total: amount
+            },
+            payment: {
+                paymentUrl: endpoint
+            }
+        };
+    }
+
+    /**
+     * Xử lý IPN callback từ SePay sau khi người dùng chuyển khoản
+     * description = orderId (server đặt nội dung CK = orderId)
+     */
+    async handleSepayIpn(body: any): Promise<void> {
+        const { content, description, transferAmount, referenceCode, transferType, id } = body;
+
+        console.log(`[SePay IPN] id=${id}, content="${content}", amount=${transferAmount}, type=${transferType}`);
+
+        // Chỉ xử lý giao dịch tiền vào
+        if (transferType !== 'in') {
+            console.log('[SePay IPN] Ignoring non-incoming transaction');
+            return;
+        }
+
+        // SePay gửi orderId trong field 'content' (nội dung chuyển khoản)
+        // Format: "SEVQR TKPND<orderId>" → tách phần sau "TKPND"
+        const rawContent: string = content?.trim() || description?.trim() || '';
+        let orderId: string | undefined;
+
+        const tkpndIdx = rawContent.indexOf('TKPND');
+        if (tkpndIdx !== -1) {
+            orderId = rawContent.slice(tkpndIdx + 5).trim(); // bỏ "TKPND" lấy phần còn lại
+        } else {
+            // Fallback: dùng nguyên content nếu không theo format VA
+            orderId = rawContent || undefined;
+        }
+
+        if (!orderId) {
+            console.warn('[SePay IPN] Cannot extract orderId from content:', rawContent);
+            return;
+        }
+
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: { id: orderId },
+        });
+
+        if (!order) {
+            console.warn(`[SePay IPN] Order "${orderId}" not found`);
+            return;
+        }
+
+        if (order.paymentStatus === OrderPaymentStatus.Paid) {
+            console.log(`[SePay IPN] Order ${orderId} already Paid, skip`);
+            return;
+        }
+
+        await this.prismaService.prismaClient.$transaction(async (prisma) => {
+            await prisma.orders.update({
+                where: { id: orderId },
+                data: { paymentStatus: OrderPaymentStatus.Paid },
+            });
+
+            const existing = await prisma.checkoutHistory.findUnique({ where: { orderId } });
+            if (!existing) {
+                await prisma.checkoutHistory.create({
+                    data: {
+                        orderId,
+                        accountId: order.accountId,
+                        paymentType: 'SePay' as any,
+                        amount: transferAmount ?? order.totalAmount,
+                        requestId: referenceCode ?? '',
+                    },
+                });
+            }
+        });
+
+        console.log(`[SePay IPN] Order ${orderId} marked as Paid`);
+    }
+
+    /** Kiểm tra trạng thái thanh toán của đơn hàng */
+    async getOrderPaymentStatus(orderId: string) {
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: { id: orderId },
+            select: {
+                id: true,
+                paymentStatus: true,
+                paymentMethod: true,
+                accountId: true,
+                totalAmount: true,
+            },
+        });
+
+        if (!order) {
+            throw new Error(`Order ${orderId} not found`);
+        }
+
+        return order;
+    }
+
+    /** Tạo lại payment URL cho đơn hàng chưa thanh toán */
+    async regeneratePaymentUrl(orderId: string, accountId: string, email: string): Promise<{ paymentUrl: string }> {
+        const order = await this.prismaService.prismaClient.orders.findUnique({
+            where: { id: orderId },
+            select: { id: true, paymentStatus: true, paymentMethod: true, totalAmount: true, accountId: true },
+        });
+
+        if (!order) throw new BadRequestException('Đơn hàng không tồn tại');
+        if (order.paymentStatus === OrderPaymentStatus.Paid) throw new BadRequestException('Đơn hàng đã được thanh toán');
+        if (order.accountId !== accountId) throw new BadRequestException('Bạn không có quyền truy cập đơn hàng này');
+
+        if (order.paymentMethod === 'SePay' as any) {
+            const result = await this.paymentSeapayCreate(order.totalAmount, orderId, accountId, email);
+            return { paymentUrl: result.payment.paymentUrl };
+        }
+
+        if (order.paymentMethod === 'Momo' as any) {
+            const result = await this.paymentMomoCreate({
+                orderId,
+                total: order.totalAmount,
+                orderInfo: `Thanh toán đơn hàng ${orderId}`,
+                lang: 'vi',
+                extraData: { id: accountId, email },
+            });
+            return { paymentUrl: result.payment.paymentUrl };
+        }
+
+        throw new BadRequestException('Phương thức thanh toán không hỗ trợ tạo lại URL');
     }
 
     /** Admin: lấy tất cả giao dịch với filter/sort/pagination */

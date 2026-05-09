@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Ip, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { PaymentsService } from '../services/payments.service';
 import type { Request } from 'express';
 
@@ -8,7 +8,6 @@ export class PaymentsController {
 
     /**
      * IPN (Instant Payment Notification) callback từ Momo
-     * Momo gọi vào endpoint này sau khi người dùng thanh toán
      */
     @Post("ipn/momo-service")
     async momoIpnCallback(@Req() request: Request) {
@@ -21,8 +20,49 @@ export class PaymentsController {
             console.error("[Momo IPN] Error handling callback:", err);
         }
 
-        // Momo yêu cầu trả về 204 hoặc 200
         return { message: "ok" };
+    }
+
+    /**
+     * IPN callback từ SePay
+     * body.description = orderId của đơn hàng
+     */
+    @Post("ipn/sepay-service")
+    async sepayIpnCallback(@Req() request: Request) {
+        const header = request.headers['authorization'];
+        const body = request.body;
+
+        console.log("[Sepay IPN] Received callback:", header, body);
+
+        try {
+            await this.paymentsService.handleSepayIpn(body);
+        } catch (err) {
+            console.error("[Sepay IPN] Error handling callback:", err);
+        }
+
+        // SePay yêu cầu 200 với success=true
+        return { success: true };
+    }
+
+    /**
+     * Kiểm tra trạng thái thanh toán của đơn hàng
+     * GET /api/payment/orders/:orderId/payment-status
+     */
+    @Get("orders/:orderId/payment-status")
+    async checkPaymentStatus(@Param('orderId') orderId: string) {
+        return this.paymentsService.getOrderPaymentStatus(orderId);
+    }
+
+    /**
+     * Tạo lại URL thanh toán cho đơn hàng chưa thanh toán
+     * POST /api/payment/orders/:orderId/repay
+     */
+    @Post("orders/:orderId/repay")
+    async repayOrder(
+        @Param('orderId') orderId: string,
+        @Body() body: { accountId: string; email: string },
+    ) {
+        return this.paymentsService.regeneratePaymentUrl(orderId, body.accountId, body.email);
     }
 
     /**

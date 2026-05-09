@@ -6,6 +6,7 @@ type RegisterRep = {
 type LoginRep = {
     uid: string;
     email: string;
+    role: string;
     accessToken: string;
     time: {
         issuedAt: number;

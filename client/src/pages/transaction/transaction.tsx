@@ -27,13 +27,13 @@ const payTypeLabel: Record<string, string> = {
 };
 
 const orderStatusLabel: Record<string, string> = {
-    Pending: "Chờ xác nhận", Confirm: "Đã xác nhận",
-    InTransit: "Đang giao", Done: "Hoàn thành", Cancled: "Đã hủy",
+    Pending: "Chờ xác nhận", Confirmed: "Đã xác nhận",
+    InTransit: "Đang giao", Received: "Đã nhận", Cancelled: "Đã hủy",
 };
 
 const orderStatusClass: Record<string, string> = {
-    Pending: "text-yellow-700 bg-yellow-100", Confirm: "text-blue-700 bg-blue-100",
-    InTransit: "text-indigo-700 bg-indigo-100", Done: "text-emerald-700 bg-emerald-100", Cancled: "text-red-700 bg-red-100",
+    Pending: "text-yellow-700 bg-yellow-100", Confirmed: "text-blue-700 bg-blue-100",
+    InTransit: "text-indigo-700 bg-indigo-100", Received: "text-emerald-700 bg-emerald-100", Cancelled: "text-red-700 bg-red-100",
 };
 
 const formatDT = (v: string) =>

@@ -14,14 +14,14 @@ export const getStatisticsData = async () => {
     api.get<OrderDetailRep[]>("/api/orders"),
   ]);
 
-  const productsData = Array.isArray(productsRes?.data.data)
-    ? productsRes.data.data
-    : ((productsRes?.data.data as { data: ProductRep[] })?.data ?? []);
+  const productsData = Array.isArray(productsRes?.data)
+    ? productsRes.data
+    : ((productsRes?.data as { data: ProductRep[] })?.data ?? []);
 
   return {
     products: productsData,
     categories: categoriesRes?.data ?? [],
-    orders: ordersRes?.data?.data ?? [],
+    orders: ordersRes?.data ?? [],
   };
 };
 
@@ -85,11 +85,11 @@ export const calculateCategoryStatistics = (
     }
     stats.products.push(product);
   });
-  console.log(orders);  
+  console.log(orders);
 
   // Calculate sales, revenue, and orders from non-cancelled orders
   orders.forEach((order) => {
-    if (order.status !== "Cancled") {
+    if (order.status !== "Cancelled") {
       order.orderItems?.forEach((item) => {
         const product = products.find(p => p.id === item.productId);
         if (product) {
@@ -123,7 +123,7 @@ export const calculateProductStatistics = (
   const productStatsMap = new Map<string, { sold: number; revenue: number }>();
 
   orders.forEach((order) => {
-    if (order.status !== "Cancled") {
+    if (order.status !== "Cancelled") {
       order.orderItems?.forEach((item) => {
         const stats = productStatsMap.get(item.productId) || {
           sold: 0,
@@ -183,18 +183,18 @@ export const calculateOrderStatistics = (
 
   orders.forEach((order) => {
     // Status
-    const statusLabel = 
+    const statusLabel =
       order.status === "Pending" ? "Chờ xử lý" :
-      order.status === "Confirm" ? "Đã xác nhận" :
-      order.status === "InTransit" ? "Đang giao" :
-      order.status === "Done" ? "Hoàn thành" :
-      order.status === "Cancled" ? "Đã hủy" : order.status;
+        order.status === "Confirmed" ? "Đã xác nhận" :
+          order.status === "InTransit" ? "Đang giao" :
+            order.status === "Received" ? "Đã nhận" :
+              order.status === "Cancelled" ? "Đã hủy" : order.status;
 
     statusMap.set(statusLabel, (statusMap.get(statusLabel) || 0) + 1);
 
-    if (order.status === "Done") {
+    if (order.status === "Received") {
       completedOrders++;
-    } else if (order.status === "Cancled") {
+    } else if (order.status === "Cancelled") {
       cancelledOrders++;
     }
 
@@ -203,7 +203,7 @@ export const calculateOrderStatistics = (
     paymentMap.set(paymentLabel, (paymentMap.get(paymentLabel) || 0) + 1);
 
     // Revenue tracking (non-cancelled orders)
-    if (order.status !== "Cancled") {
+    if (order.status !== "Cancelled") {
       totalRevenue += order.totalAmount;
 
       // Group revenue by date
@@ -222,7 +222,7 @@ export const calculateOrderStatistics = (
 
   const statusDistribution = Array.from(statusMap.entries()).map(([name, value]) => ({ name, value }));
   const paymentDistribution = Array.from(paymentMap.entries()).map(([name, value]) => ({ name, value }));
-  
+
   // Sort orders descending by createdAt to get top 10
   const recentOrders = [...orders]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

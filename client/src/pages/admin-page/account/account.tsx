@@ -3,6 +3,7 @@ import InputSearch from "../../../components/input/input-search/input-search";
 import Stats from "../../../components/stats/stats";
 import Table from "../../../components/table/table";
 import type { TableBody, TableHeader } from "../../../components/table/table";
+import AdminPagination, { PAGE_SIZES } from "../../../components/admin-pagination/admin-pagination";
 import {
     getAllAccounts, lockAccount, activateAccount, resetAccountPassword,
     type AccountRep,
@@ -125,6 +126,8 @@ const AdminAccount = () => {
     const [showAddAccount, setShowAddAccount] = useState(false);
     const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<AccountRep | null>(null);
     const [resetTarget, setResetTarget] = useState<AccountRep | null>(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
 
     const { showToast, showErrorResponse } = useToastContext();
     const { waitConfirm } = useModalConfirmContext();
@@ -174,12 +177,18 @@ const AdminAccount = () => {
         return matchSearch && matchRole;
     }), [accounts, searchInput, roleFilter]);
 
+    // Reset trang khi filter thay đổi
+    useEffect(() => { setPage(1); }, [searchInput, roleFilter]);
+
+    const totalPages = Math.max(Math.ceil(filtered.length / pageSize), 1);
+    const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+
     const formatDate = (d: Date | string) => new Intl.DateTimeFormat("vi-VN").format(new Date(d));
 
     /* ── Table ── */
     const tableHead: TableHeader = ["# UID", "Email", "Role", "Trạng thái", "Ngày tạo", "Thao tác"];
 
-    const tableBody: TableBody = filtered.map(acc => ([
+    const tableBody: TableBody = paginated.map(acc => ([
         { reactNode: <div className="max-w-40 truncate text-xs font-mono" title={acc.id}>{acc.id}</div>, clipboard: acc.id },
         { reactNode: <div className="max-w-52 truncate text-sm" title={acc.email}>{acc.email}</div> },
         {
@@ -264,7 +273,17 @@ const AdminAccount = () => {
             {loading ? (
                 <div className="flex justify-center py-10 text-gray-400 text-sm">Đang tải dữ liệu...</div>
             ) : (
-                <Table tableHead={tableHead} tableBody={tableBody} />
+                <>
+                    <Table tableHead={tableHead} tableBody={tableBody} />
+                    <AdminPagination
+                        page={page}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                        pageSize={pageSize}
+                        onPageSizeChange={s => { setPageSize(s); setPage(1); }}
+                        total={filtered.length}
+                    />
+                </>
             )}
 
             {/* Modals */}

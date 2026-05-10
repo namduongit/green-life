@@ -91,7 +91,7 @@ export const calculateCategoryStatistics = (
   orders.forEach((order) => {
     if (order.status !== "Cancelled") {
       order.orderItems?.forEach((item) => {
-        const product = products.find(p => p.id === item.productId);
+        const product = products.find((p) => p.id === item.productId);
         if (product) {
           const categoryId = product.category?.id || "uncategorized";
           const stats = categoryMap.get(categoryId);
@@ -165,7 +165,7 @@ export interface OrderStatistics {
 }
 
 export const calculateOrderStatistics = (
-  orders: OrderDetailRep[]
+  orders: OrderDetailRep[],
 ): OrderStatistics => {
   let completedOrders = 0;
   let cancelledOrders = 0;
@@ -184,11 +184,17 @@ export const calculateOrderStatistics = (
   orders.forEach((order) => {
     // Status
     const statusLabel =
-      order.status === "Pending" ? "Chờ xử lý" :
-        order.status === "Confirmed" ? "Đã xác nhận" :
-          order.status === "InTransit" ? "Đang giao" :
-            order.status === "Received" ? "Đã nhận" :
-              order.status === "Cancelled" ? "Đã hủy" : order.status;
+      order.status === "Pending"
+        ? "Chờ xử lý"
+        : order.status === "Confirmed"
+          ? "Đã xác nhận"
+          : order.status === "InTransit"
+            ? "Đang giao"
+            : order.status === "Received"
+              ? "Đã nhận"
+              : order.status === "Cancelled"
+                ? "Đã hủy"
+                : order.status;
 
     statusMap.set(statusLabel, (statusMap.get(statusLabel) || 0) + 1);
 
@@ -208,7 +214,10 @@ export const calculateOrderStatistics = (
 
       // Group revenue by date
       const dateKey = new Date(order.createdAt).toISOString().slice(0, 10);
-      revenueByDateMap.set(dateKey, (revenueByDateMap.get(dateKey) || 0) + order.totalAmount);
+      revenueByDateMap.set(
+        dateKey,
+        (revenueByDateMap.get(dateKey) || 0) + order.totalAmount,
+      );
     }
   });
 
@@ -220,12 +229,19 @@ export const calculateOrderStatistics = (
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const statusDistribution = Array.from(statusMap.entries()).map(([name, value]) => ({ name, value }));
-  const paymentDistribution = Array.from(paymentMap.entries()).map(([name, value]) => ({ name, value }));
+  const statusDistribution = Array.from(statusMap.entries()).map(
+    ([name, value]) => ({ name, value }),
+  );
+  const paymentDistribution = Array.from(paymentMap.entries()).map(
+    ([name, value]) => ({ name, value }),
+  );
 
   // Sort orders descending by createdAt to get top 10
   const recentOrders = [...orders]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
     .slice(0, 10);
 
   return {

@@ -6,7 +6,7 @@ import { JwtPayload } from 'src/modules/auth/services/auth.service';
 export class AuthorizeMiddleware implements NestMiddleware {
     constructor(private jwtService: JwtService) {}
     use(req: any, res: any, next: (error?: any) => void) {
-        console.log('Run in authorize middlware');
+        // console.log('Run in authorize middlware');
         const header = req.headers['authorization'];
         const token = header && header.split(' ')[1];
         if (!token) {
@@ -15,7 +15,7 @@ export class AuthorizeMiddleware implements NestMiddleware {
         try {
             const decoded = this.jwtService.verify(token) as JwtPayload;
             req.user = decoded;
-            console.log(decoded);
+            // console.log(decoded);
         } catch (error) {
             console.log('JWT ERROR:', error.message);
             throw new UnauthorizedException('Token không hợp lệ');

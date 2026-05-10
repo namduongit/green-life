@@ -156,9 +156,10 @@ model Orders {
     recipientWard     String
     recipientDetail   String
 
-    paymentMethod OrderPaymentMethod
-    status        OrderStatus
-    paymentStatus OrderPaymentStatus
+    paymentMethod   OrderPaymentMethod
+    status          OrderStatus
+    paymentStatus   OrderPaymentStatus
+    momoRetryCount  Int                @default(0)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

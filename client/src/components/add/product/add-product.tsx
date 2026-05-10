@@ -107,6 +107,9 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log("namduongit debug file", file);
+    console.log("namduongit debug CLOUDINARY_UPLOAD_URL", CLOUDINARY_UPLOAD_URL);
+    console.log("namduongit debug CLOUDINARY_UPLOAD_PRESET", CLOUDINARY_UPLOAD_PRESET);
     if (!CLOUDINARY_UPLOAD_URL || !CLOUDINARY_UPLOAD_PRESET) {
       showToast("Error", "Thiếu cấu hình Cloudinary để upload hình ảnh");
       return;
@@ -466,11 +469,10 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
                   <button
                     type="button"
                     onClick={() => setImageMode("upload")}
-                    className={`flex-1 px-2 py-2 rounded text-xs font-medium transition ${
-                      imageMode === "upload"
+                    className={`flex-1 px-2 py-2 rounded text-xs font-medium transition ${imageMode === "upload"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     <i className="fa-solid fa-cloud-arrow-up me-1"></i>
                     Upload
@@ -478,11 +480,10 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
                   <button
                     type="button"
                     onClick={() => setImageMode("url")}
-                    className={`flex-1 px-2 py-2 rounded text-xs font-medium transition ${
-                      imageMode === "url"
+                    className={`flex-1 px-2 py-2 rounded text-xs font-medium transition ${imageMode === "url"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     <i className="fa-solid fa-link me-1"></i>
                     URL
@@ -551,11 +552,10 @@ const AddProduct = ({ onProductAdded, onClose }: Props) => {
                       key={tag.id}
                       type="button"
                       onClick={() => toggleTag(tag.id)}
-                      className={`px-2 py-1 text-xs rounded-full border transition whitespace-nowrap ${
-                        form.tags.includes(tag.id)
+                      className={`px-2 py-1 text-xs rounded-full border transition whitespace-nowrap ${form.tags.includes(tag.id)
                           ? "bg-blue-600 text-white border-blue-600"
                           : "bg-white text-gray-700 border-gray-300 hover:border-blue-600"
-                      }`}
+                        }`}
                     >
                       {tag.name}
                     </button>

@@ -228,7 +228,7 @@ export class OrdersService {
             const momoPayment = await this.paymentsService.paymentMomoCreate({
                 total: orderDetail.totalAmount,
                 orderId: orderDetail.id,
-                orderInfo: `Thanh toán đơn hàng Green Life #${orderDetail.id}`,
+                orderInfo: `MOMOGATEPAY ${orderDetail.id}`,
                 lang: 'vi',
                 extraData: {
                     id: account.id,

@@ -17,12 +17,6 @@ interface AddressForm {
     detail: string;
 }
 
-interface SavedAddress extends AddressForm {
-    id: string;
-    label: string;
-    isDefault?: boolean;
-}
-
 type PaymentMethod = "cod" | "momo" | "sepay";
 
 
@@ -75,7 +69,7 @@ const CheckoutPage = () => {
                         setSepayQrUrl(null);
                         setSepayOrderId(null);
                         showToast("Success", "Thanh toán thành công! Đơn hàng đang được xử lý.");
-                        navigate("/page/checkout-success");
+                        navigate(`/page/checkout-success?orderId=${sepayOrderId}`);
                     }
                 } catch (_) { /* ignore */ }
             }, 5000);
@@ -230,15 +224,9 @@ const CheckoutPage = () => {
                 return;
             }
 
-            // COD hoặc các phương thức khác → vào trang payment
+            // COD → redirect thẳng về lịch sử đơn hàng
             showToast("Success", "Đơn hàng đã được tạo thành công!");
-            navigate("/page/payment", {
-                state: {
-                    paymentMethod,
-                    address: addressForm,
-                    discountCode: appliedCode ?? undefined
-                }
-            });
+            navigate("/page/orders");
         }
     };
 

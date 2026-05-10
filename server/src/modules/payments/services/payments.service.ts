@@ -20,17 +20,19 @@ export class PaymentsService {
 
     async paymentMomoCreate(
         require: MomoRequireOtps,
-        optional?: MomoOptionalOtps
+        optional?: MomoOptionalOtps,
+        /** orderId thực sự gửi cho MoMo (khác require.orderId khi gen lại để tránh duplicate) */
+        momoOrderId?: string
     ): Promise<PaymentRep> {
         const requestId = v1();
+        const effectiveOrderId = momoOrderId ?? require.orderId;
         const extraData = Buffer.from(JSON.stringify(require.extraData)).toString('base64');
-
         const signature =
             `accessKey=${MomoConstants.AccessKey}` +
             `&amount=${require.total}` +
             `&extraData=${extraData}` +
             `&ipnUrl=${MomoConstants.IpnUrl}` +
-            `&orderId=${require.orderId}` +
+            `&orderId=${effectiveOrderId}` +
             `&orderInfo=${require.orderInfo}` +
             `&partnerCode=${MomoConstants.PartnerCode}` +
             `&redirectUrl=${MomoConstants.RedirectUrl}` +
@@ -44,7 +46,7 @@ export class PaymentsService {
             requestType: "captureWallet",
             ipnUrl: MomoConstants.IpnUrl,
             redirectUrl: MomoConstants.RedirectUrl,
-            orderId: require.orderId,
+            orderId: effectiveOrderId,
             amount: require.total,
             orderInfo: require.orderInfo,
             requestId: requestId,
@@ -73,7 +75,7 @@ export class PaymentsService {
                 if (response.data.resultCode === 0) {
                     return {
                         requestId: requestId,
-                        orderId: require.orderId,
+                        orderId: requestId,
                         createDate: null,
                         expireDate: null,
                         provider: "Momo",
@@ -95,7 +97,7 @@ export class PaymentsService {
                 throw new BadRequestException("Lỗi ở phía máy chủ, vui lòng thử lại sau");
             }
         } catch (error: any) {
-            console.log("hehee");
+            console.log("Loi tao thanh toan MOMO");
             if (error instanceof AxiosError) {
                 console.log(error.response?.data.message)
                 if (error.response) {
@@ -113,14 +115,17 @@ export class PaymentsService {
      * resultCode = 0 → thanh toán thành công
      */
     async handleMomoIpn(body: any): Promise<void> {
-        const { orderId, resultCode, requestId, amount, transId } = body;
+        const { orderId: rawOrderId, resultCode, requestId, amount, transId } = body;
 
-        console.log(`[Momo IPN] orderId=${orderId}, resultCode=${resultCode}, transId=${transId}`);
+        console.log(`[Momo IPN] rawOrderId=${rawOrderId}, resultCode=${resultCode}, transId=${transId}`);
 
-        if (!orderId) {
+        if (!rawOrderId) {
             console.warn('[Momo IPN] Missing orderId in callback');
             return;
         }
+
+        // Strip suffix _N nếu đây là gen lại payment (vd: "abc-123_2" → "abc-123")
+        const orderId = rawOrderId.replace(/_\d+$/, '');
 
         const order = await this.prismaService.prismaClient.orders.findUnique({
             where: { id: orderId },
@@ -297,13 +302,25 @@ export class PaymentsService {
         }
 
         if (order.paymentMethod === 'Momo' as any) {
-            const result = await this.paymentMomoCreate({
-                orderId,
-                total: order.totalAmount,
-                orderInfo: `Thanh toán đơn hàng ${orderId}`,
-                lang: 'vi',
-                extraData: { id: accountId, email },
+            // Tăng retry count để tạo orderId unique cho MoMo (không cho phép trùng orderId)
+            const updated = await this.prismaService.prismaClient.orders.update({
+                where: { id: orderId },
+                data: { momoRetryCount: { increment: 1 } },
+                select: { momoRetryCount: true },
             });
+            const momoOrderId = `${orderId}_${updated.momoRetryCount}`;
+
+            const result = await this.paymentMomoCreate(
+                {
+                    orderId,
+                    total: order.totalAmount,
+                    orderInfo: `Thanh toán đơn hàng ${orderId}`,
+                    lang: 'vi',
+                    extraData: { id: accountId, email },
+                },
+                undefined,
+                momoOrderId,
+            );
             return { paymentUrl: result.payment.paymentUrl };
         }
 
